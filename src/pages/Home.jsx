@@ -210,14 +210,7 @@ export default function Home() {
 </p>
 <p style={styles.footerCopy}>
   Designed by{' '}
-  
-    href="https://wa.me/2348131626807?text=Hello%2C%20I%20saw%20your%20work%20on%20OkeOgunJobs%20and%20I%27d%20like%20to%20discuss%20a%20web%20development%20project%20with%20you."
-    target="_blank"
-    rel="noreferrer"
-    style={{ color: '#aaa', textDecoration: 'underline' }}
-  >
-    Megafx Designs
-  </a>
+  <a href="https://wa.me/2348131626807?text=Hello%2C%20I%20saw%20your%20work%20on%20OkeOgunJobs%20and%20I%27d%20like%20to%20discuss%20a%20web%20development%20project%20with%20you." target="_blank" rel="noreferrer" style={{ color: '#aaa', textDecoration: 'underline' }}>Megafx Designs</a>
 </p>
         </div>
       </footer>
