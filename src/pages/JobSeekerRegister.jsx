@@ -357,7 +357,7 @@ export default function JobSeekerRegister() {
               style={styles.checkbox}
             />
             <label htmlFor="consent" style={styles.consentLabel}>
-              I agree to the IseWorks Privacy Policy and consent to my data being used
+              I agree to the OkeOgunJobs Privacy Policy and consent to my data being used
               to connect me with employment opportunities.
             </label>
           </div>
