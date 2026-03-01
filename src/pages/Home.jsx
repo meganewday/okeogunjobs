@@ -69,8 +69,8 @@ export default function Home() {
         <div style={styles.heroContent}>
           <h1 style={styles.heroTitle}>{APP_TAGLINE}</h1>
           <p style={styles.heroSub}>
-            A community-driven job bank connecting skilled {APP_REGION} indigenes
-            to verified employment opportunities — for free.
+            A community-driven job bank connecting {APP_REGION} indigenes — 
+skilled and unskilled — to verified employment opportunities, for free.
           </p>
           <div style={styles.heroButtons}>
             <Link to="/register" style={styles.heroBtnPrimary}>Register as Job Seeker</Link>
