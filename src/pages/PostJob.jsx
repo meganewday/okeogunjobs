@@ -2,6 +2,16 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
+  useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth >= 1024)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return isDesktop
+}
+
 const LGAs = [
   'Saki West', 'Saki East', 'Atisbo', 'Oorelope', 'Olorunsogo',
   'Iseyin', 'Itesiwaju', 'Kajola', 'Iwajowa'
@@ -31,6 +41,7 @@ export default function PostJob() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const isDesktop = useIsDesktop()
 
   useEffect(() => {
     async function fetchSkills() {
@@ -63,7 +74,6 @@ export default function PostJob() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-
     if (!form.organization_name || !form.contact_person || !form.phone_number) {
       setError('Organisation name, contact person, and phone number are required.')
       return
@@ -80,11 +90,8 @@ export default function PostJob() {
       setError('Please select an application method.')
       return
     }
-
     setSubmitting(true)
-
     try {
-      // First insert employer
       const { data: employerData, error: employerError } = await supabase
         .from('employers')
         .insert({
@@ -96,10 +103,8 @@ export default function PostJob() {
         })
         .select()
         .single()
-
       if (employerError) throw employerError
 
-      // Then insert job listing linked to employer
       const { error: jobError } = await supabase
         .from('job_listings')
         .insert({
@@ -113,11 +118,8 @@ export default function PostJob() {
           application_method: form.application_method,
           status: 'pending',
         })
-
       if (jobError) throw jobError
-
       setSuccess(true)
-
     } catch (err) {
       console.error(err)
       setError('Something went wrong. Please try again.')
@@ -148,7 +150,7 @@ export default function PostJob() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
+      <div style={{ maxWidth: isDesktop ? '860px' : '600px', margin: '0 auto' }}>
         <h1 style={styles.title}>Post a Job</h1>
         <p style={styles.subtitle}>
           Fill in the details below to list a job on {APP_NAME}.
@@ -159,68 +161,80 @@ export default function PostJob() {
 
           <h3 style={styles.sectionHeader}>Employer Information</h3>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Organisation / Employer Name *</label>
-            <input
-              style={styles.input}
-              type="text"
-              name="organization_name"
-              value={form.organization_name}
-              onChange={handleChange}
-              placeholder="e.g. Saki Farms Ltd"
-            />
-          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
+            gap: '0 24px',
+          }}>
+            <div style={styles.field}>
+              <label style={styles.label}>Organisation / Employer Name *</label>
+              <input style={styles.input} type="text" name="organization_name" value={form.organization_name} onChange={handleChange} placeholder="e.g. Saki Farms Ltd" />
+            </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Contact Person *</label>
-            <input
-              style={styles.input}
-              type="text"
-              name="contact_person"
-              value={form.contact_person}
-              onChange={handleChange}
-              placeholder="Full name of contact person"
-            />
-          </div>
+            <div style={styles.field}>
+              <label style={styles.label}>Contact Person *</label>
+              <input style={styles.input} type="text" name="contact_person" value={form.contact_person} onChange={handleChange} placeholder="Full name of contact person" />
+            </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Phone Number *</label>
-            <input
-              style={styles.input}
-              type="tel"
-              name="phone_number"
-              value={form.phone_number}
-              onChange={handleChange}
-              placeholder="e.g. 08012345678"
-            />
-          </div>
+            <div style={styles.field}>
+              <label style={styles.label}>Phone Number *</label>
+              <input style={styles.input} type="tel" name="phone_number" value={form.phone_number} onChange={handleChange} placeholder="e.g. 08012345678" />
+            </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Email Address (optional)</label>
-            <input
-              style={styles.input}
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="e.g. contact@company.com"
-            />
+            <div style={styles.field}>
+              <label style={styles.label}>Email Address (optional)</label>
+              <input style={styles.input} type="email" name="email" value={form.email} onChange={handleChange} placeholder="e.g. contact@company.com" />
+            </div>
           </div>
 
           <h3 style={styles.sectionHeader}>Job Details</h3>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Job Title *</label>
-            <input
-              style={styles.input}
-              type="text"
-              name="job_title"
-              value={form.job_title}
-              onChange={handleChange}
-              placeholder="e.g. Farm Supervisor"
-            />
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
+            gap: '0 24px',
+          }}>
+            <div style={styles.field}>
+              <label style={styles.label}>Job Title *</label>
+              <input style={styles.input} type="text" name="job_title" value={form.job_title} onChange={handleChange} placeholder="e.g. Farm Supervisor" />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Job Type *</label>
+              <select style={styles.input} name="job_type" value={form.job_type} onChange={handleChange}>
+                <option value="">Select job type</option>
+                {JOB_TYPES.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Job Location</label>
+              <input style={styles.input} type="text" name="location" value={form.location} onChange={handleChange} placeholder="e.g. Saki, Iseyin" />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Local Government Area</label>
+              <select style={styles.input} name="lga" value={form.lga} onChange={handleChange}>
+                <option value="">Select LGA</option>
+                {LGAs.map(lga => (
+                  <option key={lga} value={lga}>{lga}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Application Method *</label>
+              <select style={styles.input} name="application_method" value={form.application_method} onChange={handleChange}>
+                <option value="">Select application method</option>
+                <option value="phone">Phone Call</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+            </div>
           </div>
 
+          {/* Job Description - full width */}
           <div style={styles.field}>
             <label style={styles.label}>Job Description *</label>
             <textarea
@@ -232,40 +246,9 @@ export default function PostJob() {
             />
           </div>
 
+          {/* Skills - full width */}
           <div style={styles.field}>
-            <label style={styles.label}>Job Type *</label>
-            <select style={styles.input} name="job_type" value={form.job_type} onChange={handleChange}>
-              <option value="">Select job type</option>
-              {JOB_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>Job Location</label>
-            <input
-              style={styles.input}
-              type="text"
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-              placeholder="e.g. Saki, Iseyin"
-            />
-          </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>Local Government Area</label>
-            <select style={styles.input} name="lga" value={form.lga} onChange={handleChange}>
-              <option value="">Select LGA</option>
-              {LGAs.map(lga => (
-                <option key={lga} value={lga}>{lga}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>Skills Required (select all that apply)</label>
+            <label style={styles.label}>Skills Required — select all that apply (including General Labour)</label>
             {Object.entries(grouped).map(([category, categorySkills]) => (
               <div key={category} style={styles.skillGroup}>
                 <p style={styles.skillCategory}>{category}</p>
@@ -288,15 +271,6 @@ export default function PostJob() {
             ))}
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Application Method *</label>
-            <select style={styles.input} name="application_method" value={form.application_method} onChange={handleChange}>
-              <option value="">Select application method</option>
-              <option value="phone">Phone Call</option>
-              <option value="whatsapp">WhatsApp</option>
-            </select>
-          </div>
-
           {error && <p style={styles.error}>{error}</p>}
 
           <button
@@ -314,11 +288,10 @@ export default function PostJob() {
 }
 
 const styles = {
-  page: { minHeight: '100vh', backgroundColor: '#f5f7f5', padding: '24px 16px' },
-  container: { maxWidth: '600px', margin: '0 auto' },
-  title: { fontSize: '24px', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
+  page: { minHeight: '100vh', backgroundColor: '#f5f7f5', padding: '40px 24px' },
+  title: { fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
   subtitle: { fontSize: '14px', color: '#555', marginBottom: '24px' },
-  form: { backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+  form: { backgroundColor: '#fff', borderRadius: '12px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
   sectionHeader: { fontSize: '16px', fontWeight: '700', color: '#1a6b3c', marginBottom: '16px', marginTop: '8px', paddingBottom: '8px', borderBottom: '2px solid #e8f5ee' },
   field: { marginBottom: '20px' },
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },

@@ -2,6 +2,16 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
+  useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth >= 1024)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return isDesktop
+}
+
 const LGAs = [
   'Saki West', 'Saki East', 'Atisbo', 'Oorelope', 'Olorunsogo',
   'Iseyin', 'Itesiwaju', 'Kajola', 'Iwajowa'
@@ -39,6 +49,7 @@ export default function JobSeekerRegister() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const isDesktop = useIsDesktop()
 
   useEffect(() => {
     async function fetchSkills() {
@@ -91,7 +102,6 @@ export default function JobSeekerRegister() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-
     if (!form.full_name || !form.phone_number) {
       setError('Full name and phone number are required.')
       return
@@ -100,29 +110,19 @@ export default function JobSeekerRegister() {
       setError('You must agree to the privacy policy to register.')
       return
     }
-
     setSubmitting(true)
-
     try {
       let cv_url = null
-
-      // Upload CV if provided
       if (cvFile) {
         const fileExt = cvFile.name.split('.').pop()
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
         const { error: uploadError } = await supabase.storage
           .from('cvs')
           .upload(fileName, cvFile)
-
         if (uploadError) throw uploadError
-
-        const { data: urlData } = supabase.storage
-          .from('cvs')
-          .getPublicUrl(fileName)
+        const { data: urlData } = supabase.storage.from('cvs').getPublicUrl(fileName)
         cv_url = urlData.publicUrl
       }
-
-      // Insert job seeker record
       const { error: insertError } = await supabase
         .from('job_seekers')
         .insert({
@@ -140,11 +140,8 @@ export default function JobSeekerRegister() {
           cv_url,
           status: 'pending',
         })
-
       if (insertError) throw insertError
-
       setSuccess(true)
-
     } catch (err) {
       console.error(err)
       setError('Something went wrong. Please try again.')
@@ -167,7 +164,6 @@ export default function JobSeekerRegister() {
     )
   }
 
-  // Group skills by category for display
   const grouped = skills.reduce((acc, skill) => {
     if (!acc[skill.category]) acc[skill.category] = []
     acc[skill.category].push(skill)
@@ -176,7 +172,10 @@ export default function JobSeekerRegister() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
+      <div style={{
+        maxWidth: isDesktop ? '860px' : '600px',
+        margin: '0 auto',
+      }}>
         <h1 style={styles.title}>Register as Job Seeker</h1>
         <p style={styles.subtitle}>
           Fill in your details below to join the {APP_NAME} talent pool.
@@ -185,107 +184,88 @@ export default function JobSeekerRegister() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
 
-          {/* Full Name */}
-          <div style={styles.field}>
-            <label style={styles.label}>Full Name *</label>
-            <input
-              style={styles.input}
-              type="text"
-              name="full_name"
-              value={form.full_name}
-              onChange={handleChange}
-              placeholder="Enter your full name"
-            />
+          {/* Two column layout on desktop */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
+            gap: '0 24px',
+          }}>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Full Name *</label>
+              <input style={styles.input} type="text" name="full_name" value={form.full_name} onChange={handleChange} placeholder="Enter your full name" />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Phone Number *</label>
+              <input style={styles.input} type="tel" name="phone_number" value={form.phone_number} onChange={handleChange} placeholder="e.g. 08012345678" />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>WhatsApp Number (if different)</label>
+              <input style={styles.input} type="tel" name="whatsapp_number" value={form.whatsapp_number} onChange={handleChange} placeholder="e.g. 08012345678" />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Gender (optional)</label>
+              <select style={styles.input} name="gender" value={form.gender} onChange={handleChange}>
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="prefer_not_to_say">Prefer not to say</option>
+              </select>
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Age Range (optional)</label>
+              <select style={styles.input} name="age_range" value={form.age_range} onChange={handleChange}>
+                <option value="">Select age range</option>
+                {AGE_RANGES.map(range => (
+                  <option key={range} value={range}>{range}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Town / Village</label>
+              <input style={styles.input} type="text" name="location" value={form.location} onChange={handleChange} placeholder="e.g. Saki, Iseyin" />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Ward</label>
+              <input style={styles.input} type="text" name="ward" value={form.ward} onChange={handleChange} placeholder="Enter your ward" />
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Local Government Area</label>
+              <select style={styles.input} name="lga" value={form.lga} onChange={handleChange}>
+                <option value="">Select LGA</option>
+                {LGAs.map(lga => (
+                  <option key={lga} value={lga}>{lga}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Education Level</label>
+              <select style={styles.input} name="education_level" value={form.education_level} onChange={handleChange}>
+                <option value="">Select education level</option>
+                {EDUCATION_LEVELS.map(level => (
+                  <option key={level.value} value={level.value}>{level.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={styles.field}>
+              <label style={styles.label}>Years of Experience</label>
+              <input style={styles.input} type="number" name="years_of_experience" value={form.years_of_experience} onChange={handleChange} placeholder="e.g. 3" min="0" max="50" />
+            </div>
+
           </div>
 
-          {/* Phone Number */}
+          {/* Skills - full width */}
           <div style={styles.field}>
-            <label style={styles.label}>Phone Number *</label>
-            <input
-              style={styles.input}
-              type="tel"
-              name="phone_number"
-              value={form.phone_number}
-              onChange={handleChange}
-              placeholder="e.g. 08012345678"
-            />
-          </div>
-
-          {/* WhatsApp Number */}
-          <div style={styles.field}>
-            <label style={styles.label}>WhatsApp Number (if different)</label>
-            <input
-              style={styles.input}
-              type="tel"
-              name="whatsapp_number"
-              value={form.whatsapp_number}
-              onChange={handleChange}
-              placeholder="e.g. 08012345678"
-            />
-          </div>
-
-          {/* Gender */}
-          <div style={styles.field}>
-            <label style={styles.label}>Gender (optional)</label>
-            <select style={styles.input} name="gender" value={form.gender} onChange={handleChange}>
-              <option value="">Select gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="prefer_not_to_say">Prefer not to say</option>
-            </select>
-          </div>
-
-          {/* Age Range */}
-          <div style={styles.field}>
-            <label style={styles.label}>Age Range (optional)</label>
-            <select style={styles.input} name="age_range" value={form.age_range} onChange={handleChange}>
-              <option value="">Select age range</option>
-              {AGE_RANGES.map(range => (
-                <option key={range} value={range}>{range}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Location */}
-          <div style={styles.field}>
-            <label style={styles.label}>Town / Village</label>
-            <input
-              style={styles.input}
-              type="text"
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-              placeholder="e.g. Saki, Iseyin"
-            />
-          </div>
-
-          {/* Ward */}
-          <div style={styles.field}>
-            <label style={styles.label}>Ward</label>
-            <input
-              style={styles.input}
-              type="text"
-              name="ward"
-              value={form.ward}
-              onChange={handleChange}
-              placeholder="Enter your ward"
-            />
-          </div>
-
-          {/* LGA */}
-          <div style={styles.field}>
-            <label style={styles.label}>Local Government Area</label>
-            <select style={styles.input} name="lga" value={form.lga} onChange={handleChange}>
-              <option value="">Select LGA</option>
-              {LGAs.map(lga => (
-                <option key={lga} value={lga}>{lga}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Skills */}
-          <div style={styles.field}>
-            <label style={styles.label}>Skills (select all that apply)</label>
+            <label style={styles.label}>Skills — select all that apply (select General Labour if no specific skill)</label>
             {Object.entries(grouped).map(([category, categorySkills]) => (
               <div key={category} style={styles.skillGroup}>
                 <p style={styles.skillCategory}>{category}</p>
@@ -308,64 +288,24 @@ export default function JobSeekerRegister() {
             ))}
           </div>
 
-          {/* Education Level */}
-          <div style={styles.field}>
-            <label style={styles.label}>Education Level</label>
-            <select style={styles.input} name="education_level" value={form.education_level} onChange={handleChange}>
-              <option value="">Select education level</option>
-              {EDUCATION_LEVELS.map(level => (
-                <option key={level.value} value={level.value}>{level.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Years of Experience */}
-          <div style={styles.field}>
-            <label style={styles.label}>Years of Experience</label>
-            <input
-              style={styles.input}
-              type="number"
-              name="years_of_experience"
-              value={form.years_of_experience}
-              onChange={handleChange}
-              placeholder="e.g. 3"
-              min="0"
-              max="50"
-            />
-          </div>
-
-          {/* CV Upload */}
+          {/* CV Upload - full width */}
           <div style={styles.field}>
             <label style={styles.label}>Upload CV (optional — PDF or Word, max 5MB)</label>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              onChange={handleFileChange}
-              style={styles.input}
-            />
+            <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} style={styles.input} />
             {cvFile && <p style={styles.fileName}>Selected: {cvFile.name}</p>}
           </div>
 
           {/* Consent */}
           <div style={styles.consentRow}>
-            <input
-              type="checkbox"
-              name="consent"
-              id="consent"
-              checked={form.consent}
-              onChange={handleChange}
-              style={styles.checkbox}
-            />
+            <input type="checkbox" name="consent" id="consent" checked={form.consent} onChange={handleChange} style={styles.checkbox} />
             <label htmlFor="consent" style={styles.consentLabel}>
-              I agree to the OkeOgunJobs Privacy Policy and consent to my data being used
+              I agree to the {APP_NAME} Privacy Policy and consent to my data being used
               to connect me with employment opportunities.
             </label>
           </div>
 
-          {/* Error */}
           {error && <p style={styles.error}>{error}</p>}
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={submitting}
@@ -381,11 +321,10 @@ export default function JobSeekerRegister() {
 }
 
 const styles = {
-  page: { minHeight: '100vh', backgroundColor: '#f5f7f5', padding: '24px 16px' },
-  container: { maxWidth: '600px', margin: '0 auto' },
-  title: { fontSize: '24px', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
+  page: { minHeight: '100vh', backgroundColor: '#f5f7f5', padding: '40px 24px' },
+  title: { fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
   subtitle: { fontSize: '14px', color: '#555', marginBottom: '24px' },
-  form: { backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+  form: { backgroundColor: '#fff', borderRadius: '12px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
   field: { marginBottom: '20px' },
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },
   input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' },
