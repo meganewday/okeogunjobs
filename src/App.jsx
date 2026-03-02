@@ -7,6 +7,10 @@ import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 import Header from './components/Header'
 import Footer from './components/Footer'
+import { AuthProvider } from './contexts/AuthContext'
+import { EmployerAuthProvider } from './contexts/EmployerAuthContext'
+import JobSeekerSignup from './pages/JobSeekerSignup'
+import JobSeekerLogin from './pages/JobSeekerLogin'
 
 function Layout({ children }) {
   const location = useLocation()
