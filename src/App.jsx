@@ -36,6 +36,8 @@ function App() {
           <Route path="/jobs" element={<JobListings />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
+       <Route path="/signup" element={<JobSeekerSignup />} />
+<Route path="/login" element={<JobSeekerLogin />} />
         </Routes>
       </Layout>
     </BrowserRouter>
