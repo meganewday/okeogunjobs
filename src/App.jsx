@@ -14,6 +14,7 @@ import JobSeekerLogin from './pages/JobSeekerLogin'
 import JobSeekerProfile from './pages/JobSeekerProfile'
 import ResetPassword from './pages/ResetPassword'
 import UpdatePassword from './pages/UpdatePassword'
+import EmailConfirmed from './pages/EmailConfirmed'
 
 function Layout({ children }) {
   const location = useLocation()
@@ -45,7 +46,8 @@ function App() {
               <Route path="/login" element={<JobSeekerLogin />} />
               <Route path="/profile" element={<JobSeekerProfile />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-<Route path="/update-password" element={<UpdatePassword />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
+              <Route path="/email-confirmed" element={<EmailConfirmed />} />
             </Routes>
           </Layout>
         </BrowserRouter>
