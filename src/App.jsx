@@ -12,6 +12,8 @@ import { EmployerAuthProvider } from './contexts/EmployerAuthContext'
 import JobSeekerSignup from './pages/JobSeekerSignup'
 import JobSeekerLogin from './pages/JobSeekerLogin'
 import JobSeekerProfile from './pages/JobSeekerProfile'
+import ResetPassword from './pages/ResetPassword'
+import UpdatePassword from './pages/UpdatePassword'
 
 function Layout({ children }) {
   const location = useLocation()
@@ -42,6 +44,8 @@ function App() {
               <Route path="/signup" element={<JobSeekerSignup />} />
               <Route path="/login" element={<JobSeekerLogin />} />
               <Route path="/profile" element={<JobSeekerProfile />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+<Route path="/update-password" element={<UpdatePassword />} />
             </Routes>
           </Layout>
         </BrowserRouter>
