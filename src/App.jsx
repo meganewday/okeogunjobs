@@ -27,20 +27,24 @@ function Layout({ children }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/register" element={<JobSeekerRegister />} />
-          <Route path="/post-job" element={<PostJob />} />
-          <Route path="/jobs" element={<JobListings />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-       <Route path="/signup" element={<JobSeekerSignup />} />
-<Route path="/login" element={<JobSeekerLogin />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <AuthProvider>
+      <EmployerAuthProvider>
+        <BrowserRouter>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/register" element={<JobSeekerRegister />} />
+              <Route path="/post-job" element={<PostJob />} />
+              <Route path="/jobs" element={<JobListings />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/signup" element={<JobSeekerSignup />} />
+              <Route path="/login" element={<JobSeekerLogin />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </EmployerAuthProvider>
+    </AuthProvider>
   )
 }
 
