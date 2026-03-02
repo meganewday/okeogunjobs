@@ -11,6 +11,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { EmployerAuthProvider } from './contexts/EmployerAuthContext'
 import JobSeekerSignup from './pages/JobSeekerSignup'
 import JobSeekerLogin from './pages/JobSeekerLogin'
+import JobSeekerProfile from './pages/JobSeekerProfile'
 
 function Layout({ children }) {
   const location = useLocation()
@@ -40,6 +41,7 @@ function App() {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/signup" element={<JobSeekerSignup />} />
               <Route path="/login" element={<JobSeekerLogin />} />
+              <Route path="/profile" element={<JobSeekerProfile />} />
             </Routes>
           </Layout>
         </BrowserRouter>
