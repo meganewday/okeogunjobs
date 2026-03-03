@@ -18,6 +18,7 @@ export default function Footer() {
               <Link to="/jobs" style={styles.link}>Browse Jobs</Link>
               <Link to="/register" style={styles.link}>Register as Job Seeker</Link>
               <Link to="/post-job" style={styles.link}>Post a Job</Link>
+              <Link to="/privacy" style={...}>Privacy Policy</Link>
             </div>
           </div>
           <div>
