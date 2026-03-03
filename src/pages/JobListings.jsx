@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { useAuth } from '../contexts/AuthContext'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -21,23 +23,30 @@ const JOB_TYPES = [
   { value: 'full_time', label: 'Full Time' },
   { value: 'part_time', label: 'Part Time' },
   { value: 'contract', label: 'Contract' },
+  { value: 'internship', label: 'Internship' },
 ]
 
 export default function JobListings() {
+  const { user, profile } = useAuth()
   const [jobs, setJobs] = useState([])
   const [skills, setSkills] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({
-    lga: '',
-    job_type: '',
-    skill: '',
-  })
+  const [filters, setFilters] = useState({ lga: '', job_type: '', skill: '' })
+  const [appliedIds, setAppliedIds] = useState(new Set())
+  const [applying, setApplying] = useState(null) // job id currently being applied to
+  const [coverNote, setCoverNote] = useState('')
+  const [applySuccess, setApplySuccess] = useState(null) // job id just applied to
+  const [applyError, setApplyError] = useState('')
   const isDesktop = useIsDesktop()
 
   useEffect(() => {
     fetchSkills()
     fetchJobs()
   }, [])
+
+  useEffect(() => {
+    if (profile) fetchExistingApplications()
+  }, [profile])
 
   async function fetchSkills() {
     const { data } = await supabase
@@ -56,6 +65,41 @@ export default function JobListings() {
       .order('approved_at', { ascending: false })
     if (data) setJobs(data)
     setLoading(false)
+  }
+
+  async function fetchExistingApplications() {
+    const { data } = await supabase
+      .from('applications')
+      .select('job_listing_id')
+      .eq('job_seeker_id', profile.id)
+    if (data) {
+      setAppliedIds(new Set(data.map(a => a.job_listing_id)))
+    }
+  }
+
+  async function submitApplication(job) {
+    if (!profile) return
+    setApplyError('')
+    setApplying(null)
+
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .insert({
+          job_listing_id: job.id,
+          job_seeker_id: profile.id,
+          cover_note: coverNote.trim() || null,
+          status: 'submitted',
+        })
+      if (error) throw error
+
+      setAppliedIds(prev => new Set([...prev, job.id]))
+      setApplySuccess(job.id)
+      setCoverNote('')
+      setTimeout(() => setApplySuccess(null), 4000)
+    } catch (err) {
+      setApplyError('Something went wrong. Please try again.')
+    }
   }
 
   function handleFilter(e) {
@@ -161,6 +205,16 @@ export default function JobListings() {
                 {filteredJobs.length} {filteredJobs.length === 1 ? 'job' : 'jobs'} found
               </p>
             </div>
+
+            {/* Login prompt for logged-out users */}
+            {!user && (
+              <div style={styles.loginPrompt}>
+                <p style={styles.loginPromptText}>
+                  <Link to="/signup" style={styles.loginPromptLink}>Create an account</Link>
+                  {' '}to apply for jobs directly on the platform.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Job Cards */}
@@ -176,6 +230,10 @@ export default function JobListings() {
               <div style={styles.list}>
                 {filteredJobs.map(job => {
                   const whatsappLink = buildWhatsAppLink(job)
+                  const hasApplied = appliedIds.has(job.id)
+                  const isApplying = applying === job.id
+                  const justApplied = applySuccess === job.id
+
                   return (
                     <div key={job.id} style={styles.card}>
                       <div style={styles.cardTop}>
@@ -209,15 +267,83 @@ export default function JobListings() {
                         </div>
                       )}
 
+                      {/* Cover note input — shown when Apply Now is clicked */}
+                      {isApplying && (
+                        <div style={styles.coverNoteBox}>
+                          <label style={styles.coverNoteLabel}>
+                            Add a short message to the employer (optional)
+                          </label>
+                          <textarea
+                            style={styles.coverNoteInput}
+                            rows={3}
+                            placeholder="e.g. I have 3 years of experience in this field and I am available immediately."
+                            value={coverNote}
+                            onChange={e => setCoverNote(e.target.value)}
+                            maxLength={300}
+                          />
+                          <p style={styles.coverNoteCount}>{coverNote.length}/300</p>
+                          {applyError && <p style={styles.applyError}>{applyError}</p>}
+                          <div style={styles.coverNoteActions}>
+                            <button
+                              onClick={() => submitApplication(job)}
+                              style={styles.submitApplyBtn}
+                            >
+                              Submit Application
+                            </button>
+                            <button
+                              onClick={() => { setApplying(null); setCoverNote(''); setApplyError('') }}
+                              style={styles.cancelApplyBtn}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <div style={styles.cardFooter}>
                         <p style={styles.postedDate}>
-                          Posted {new Date(job.approved_at).toLocaleDateString()}
+                          Posted {new Date(job.approved_at).toLocaleDateString('en-GB', {
+                            day: 'numeric', month: 'short', year: 'numeric'
+                          })}
                         </p>
-                        {whatsappLink && (
-                          <a href={whatsappLink} target="_blank" rel="noreferrer" style={styles.applyBtn}>
-                            Apply via WhatsApp
-                          </a>
-                        )}
+                        <div style={styles.footerButtons}>
+                          {/* WhatsApp button always visible */}
+                          {whatsappLink && (
+                            <a href={whatsappLink} target="_blank" rel="noreferrer" style={styles.whatsappBtn}>
+                              WhatsApp
+                            </a>
+                          )}
+
+                          {/* Apply Now — logged in with profile */}
+                          {user && profile && (
+                            hasApplied ? (
+                              <span style={styles.appliedBadge}>
+                                {justApplied ? '✓ Application Sent' : '✓ Applied'}
+                              </span>
+                            ) : !isApplying ? (
+                              <button
+                                onClick={() => { setApplying(job.id); setApplyError('') }}
+                                style={styles.applyBtn}
+                              >
+                                Apply Now
+                              </button>
+                            ) : null
+                          )}
+
+                          {/* Prompt logged-in users without a profile */}
+                          {user && !profile && (
+                            <Link to="/register" style={styles.applyBtn}>
+                              Complete Profile to Apply
+                            </Link>
+                          )}
+
+                          {/* Prompt logged-out users */}
+                          {!user && (
+                            <Link to="/signup" style={styles.applyBtn}>
+                              Sign Up to Apply
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )
@@ -246,6 +372,9 @@ const styles = {
   filterLabel: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#555', marginBottom: '6px' },
   filterSelect: { width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '8px', outline: 'none', backgroundColor: '#fff', color: '#333' },
   resultCount: { fontSize: '13px', color: '#888', marginTop: '8px' },
+  loginPrompt: { backgroundColor: '#fff', borderRadius: '12px', padding: '16px', marginTop: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
+  loginPromptText: { fontSize: '13px', color: '#666', lineHeight: '1.5', margin: 0 },
+  loginPromptLink: { color: '#1a6b3c', fontWeight: '700', textDecoration: 'none' },
   list: { display: 'flex', flexDirection: 'column', gap: '16px' },
   empty: { textAlign: 'center', color: '#888', padding: '40px 0' },
   emptyBox: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px', textAlign: 'center' },
@@ -261,7 +390,22 @@ const styles = {
   description: { fontSize: '14px', color: '#444', lineHeight: '1.7', marginBottom: '12px' },
   skillsRow: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' },
   skillTag: { fontSize: '12px', padding: '4px 10px', backgroundColor: '#f0f7f3', color: '#1a6b3c', borderRadius: '10px', border: '1px solid #c8e6d4' },
-  cardFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f0f0f0', paddingTop: '14px' },
+
+  // Cover note
+  coverNoteBox: { backgroundColor: '#f9fafb', borderRadius: '10px', padding: '16px', marginBottom: '16px', border: '1px solid #e8f5ee' },
+  coverNoteLabel: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#333', marginBottom: '8px' },
+  coverNoteInput: { width: '100%', padding: '10px 12px', fontSize: '13px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none', resize: 'vertical', fontFamily: 'inherit' },
+  coverNoteCount: { fontSize: '11px', color: '#aaa', textAlign: 'right', margin: '4px 0 0' },
+  coverNoteActions: { display: 'flex', gap: '10px', marginTop: '12px' },
+  submitApplyBtn: { padding: '9px 20px', backgroundColor: '#1a6b3c', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
+  cancelApplyBtn: { padding: '9px 16px', backgroundColor: 'transparent', color: '#888', border: '1px solid #ddd', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
+  applyError: { color: '#e53e3e', fontSize: '12px', marginTop: '6px' },
+
+  // Footer
+  cardFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f0f0f0', paddingTop: '14px', flexWrap: 'wrap', gap: '8px' },
   postedDate: { fontSize: '12px', color: '#aaa', margin: 0 },
-  applyBtn: { padding: '8px 18px', backgroundColor: '#25D366', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' },
+  footerButtons: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' },
+  whatsappBtn: { padding: '8px 16px', backgroundColor: '#25D366', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' },
+  applyBtn: { padding: '8px 18px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none', border: 'none', cursor: 'pointer' },
+  appliedBadge: { padding: '8px 14px', backgroundColor: '#e8f5ee', color: '#1a6b3c', borderRadius: '8px', fontSize: '13px', fontWeight: '700' },
 }
