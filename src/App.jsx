@@ -20,6 +20,7 @@ import EmployerLogin from './pages/EmployerLogin'
 import EmployerEmailConfirmed from './pages/EmployerEmailConfirmed'
 import EmployerResetPassword from './pages/EmployerResetPassword'
 import EmployerUpdatePassword from './pages/EmployerUpdatePassword'
+import EmployerDashboard from './pages/EmployerDashboard'
 
 function Layout({ children }) {
   const location = useLocation()
@@ -54,10 +55,12 @@ function App() {
               <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/email-confirmed" element={<EmailConfirmed />} />
               <Route path="/employer/signup" element={<EmployerSignup />} />
-<Route path="/employer/login" element={<EmployerLogin />} />
-<Route path="/employer/email-confirmed" element={<EmployerEmailConfirmed />} />
-<Route path="/employer/reset-password" element={<EmployerResetPassword />} />
-<Route path="/employer/update-password" element={<EmployerUpdatePassword />} />
+              <Route path="/employer/login" element={<EmployerLogin />} />
+              <Route path="/employer/email-confirmed" element={<EmployerEmailConfirmed />} />
+              <Route path="/employer/reset-password" element={<EmployerResetPassword />} />
+              <Route path="/employer/update-password" element={<EmployerUpdatePassword />} />
+              <Route path="/employer/dashboard" element={<EmployerDashboard />} />
+           
             </Routes>
           </Layout>
         </BrowserRouter>
