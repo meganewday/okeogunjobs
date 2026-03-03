@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { APP_NAME } from '../config/constants'
+import { useAuth } from '../contexts/AuthContext'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768)
@@ -15,14 +16,21 @@ function useIsDesktop() {
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
   const isDesktop = useIsDesktop()
+  const { user, profile, signOut } = useAuth()
 
-  const navLinks = [
+  const baseLinks = [
     { to: '/', label: 'Home' },
     { to: '/jobs', label: 'Browse Jobs' },
-    { to: '/register', label: 'Register' },
     { to: '/post-job', label: 'Post a Job' },
   ]
+
+  async function handleSignOut() {
+    setMenuOpen(false)
+    await signOut()
+    navigate('/')
+  }
 
   function isActive(path) {
     return location.pathname === path
@@ -40,7 +48,7 @@ export default function Header() {
         {/* Desktop Nav */}
         {isDesktop && (
           <nav style={styles.desktopNav}>
-            {navLinks.map(link => (
+            {baseLinks.map(link => (
               <Link
                 key={link.to}
                 to={link.to}
@@ -52,6 +60,40 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+
+            {user ? (
+              <>
+                <Link
+                  to="/profile"
+                  style={{
+                    ...styles.navLink,
+                    ...(isActive('/profile') ? styles.navLinkActive : {})
+                  }}
+                >
+                  {profile?.full_name
+                    ? profile.full_name.split(' ')[0]
+                    : 'My Profile'}
+                </Link>
+                <button onClick={handleSignOut} style={styles.signOutBtn}>
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  style={{
+                    ...styles.navLink,
+                    ...(isActive('/login') ? styles.navLinkActive : {})
+                  }}
+                >
+                  Log In
+                </Link>
+                <Link to="/signup" style={styles.signUpBtn}>
+                  Sign Up
+                </Link>
+              </>
+            )}
           </nav>
         )}
 
@@ -82,7 +124,7 @@ export default function Header() {
       {/* Mobile Menu */}
       {!isDesktop && menuOpen && (
         <div style={styles.mobileMenu}>
-          {navLinks.map(link => (
+          {baseLinks.map(link => (
             <Link
               key={link.to}
               to={link.to}
@@ -95,6 +137,46 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+
+          {user ? (
+            <>
+              <Link
+                to="/profile"
+                style={{
+                  ...styles.mobileLink,
+                  ...(isActive('/profile') ? styles.mobileLinkActive : {})
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                {profile?.full_name
+                  ? `${profile.full_name.split(' ')[0]}'s Profile`
+                  : 'My Profile'}
+              </Link>
+              <button onClick={handleSignOut} style={styles.mobileSignOutBtn}>
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                style={{
+                  ...styles.mobileLink,
+                  ...(isActive('/login') ? styles.mobileLinkActive : {})
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                Log In
+              </Link>
+              <Link
+                to="/signup"
+                style={styles.mobileSignUpBtn}
+                onClick={() => setMenuOpen(false)}
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
       )}
     </header>
@@ -143,6 +225,27 @@ const styles = {
     color: '#1a6b3c',
     fontWeight: '700',
   },
+  signUpBtn: {
+    padding: '8px 18px',
+    backgroundColor: '#1a6b3c',
+    color: '#fff',
+    borderRadius: '8px',
+    fontWeight: '700',
+    fontSize: '14px',
+    textDecoration: 'none',
+    marginLeft: '4px',
+  },
+  signOutBtn: {
+    padding: '8px 14px',
+    backgroundColor: 'transparent',
+    color: '#e53e3e',
+    border: '1px solid #e53e3e',
+    borderRadius: '8px',
+    fontWeight: '600',
+    fontSize: '14px',
+    cursor: 'pointer',
+    marginLeft: '4px',
+  },
   hamburger: {
     display: 'flex',
     flexDirection: 'column',
@@ -183,4 +286,30 @@ const styles = {
     color: '#1a6b3c',
     fontWeight: '700',
   },
-}
+  mobileSignUpBtn: {
+    display: 'block',
+    margin: '8px 0 0',
+    padding: '12px 16px',
+    backgroundColor: '#1a6b3c',
+    color: '#fff',
+    borderRadius: '8px',
+    fontWeight: '700',
+    fontSize: '15px',
+    textDecoration: 'none',
+    textAlign: 'center',
+  },
+  mobileSignOutBtn: {
+    display: 'block',
+    margin: '8px 0 0',
+    padding: '12px 16px',
+    backgroundColor: 'transparent',
+    color: '#e53e3e',
+    border: '1px solid #e53e3e',
+    borderRadius: '8px',
+    fontWeight: '600',
+    fontSize: '15px',
+    cursor: 'pointer',
+    textAlign: 'center',
+    width: '100%',
+  },
+        }
