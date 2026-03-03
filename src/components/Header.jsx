@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { APP_NAME } from '../config/constants'
 import { useAuth } from '../contexts/AuthContext'
+import { useEmployerAuth } from '../contexts/EmployerAuthContext'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768)
@@ -19,6 +20,7 @@ export default function Header() {
   const navigate = useNavigate()
   const isDesktop = useIsDesktop()
   const { user, profile, signOut } = useAuth()
+  const { employer, employerProfile, employerSignOut } = useEmployerAuth()
 
   const baseLinks = [
     { to: '/', label: 'Home' },
@@ -29,6 +31,12 @@ export default function Header() {
   async function handleSignOut() {
     setMenuOpen(false)
     await signOut()
+    navigate('/')
+  }
+
+  async function handleEmployerSignOut() {
+    setMenuOpen(false)
+    await employerSignOut()
     navigate('/')
   }
 
@@ -61,7 +69,28 @@ export default function Header() {
               </Link>
             ))}
 
-            {user ? (
+            {/* Employer is logged in */}
+            {employer && (
+              <>
+                <Link
+                  to="/employer/dashboard"
+                  style={{
+                    ...styles.navLink,
+                    ...(isActive('/employer/dashboard') ? styles.navLinkActive : {})
+                  }}
+                >
+                  {employerProfile?.organization_name
+                    ? employerProfile.organization_name.split(' ')[0]
+                    : 'Dashboard'}
+                </Link>
+                <button onClick={handleEmployerSignOut} style={styles.signOutBtn}>
+                  Sign Out
+                </button>
+              </>
+            )}
+
+            {/* Job seeker is logged in */}
+            {!employer && user && (
               <>
                 <Link
                   to="/profile"
@@ -78,7 +107,10 @@ export default function Header() {
                   Sign Out
                 </button>
               </>
-            ) : (
+            )}
+
+            {/* Logged out */}
+            {!employer && !user && (
               <>
                 <Link
                   to="/login"
@@ -91,6 +123,15 @@ export default function Header() {
                 </Link>
                 <Link to="/signup" style={styles.signUpBtn}>
                   Sign Up
+                </Link>
+                <Link
+                  to="/employer/login"
+                  style={{
+                    ...styles.employerLoginLink,
+                    ...(isActive('/employer/login') ? { color: '#1a6b3c' } : {})
+                  }}
+                >
+                  Employer Login
                 </Link>
               </>
             )}
@@ -138,7 +179,29 @@ export default function Header() {
             </Link>
           ))}
 
-          {user ? (
+          {/* Employer logged in */}
+          {employer && (
+            <>
+              <Link
+                to="/employer/dashboard"
+                style={{
+                  ...styles.mobileLink,
+                  ...(isActive('/employer/dashboard') ? styles.mobileLinkActive : {})
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                {employerProfile?.organization_name
+                  ? `${employerProfile.organization_name.split(' ')[0]} — Dashboard`
+                  : 'Employer Dashboard'}
+              </Link>
+              <button onClick={handleEmployerSignOut} style={styles.mobileSignOutBtn}>
+                Sign Out
+              </button>
+            </>
+          )}
+
+          {/* Job seeker logged in */}
+          {!employer && user && (
             <>
               <Link
                 to="/profile"
@@ -156,7 +219,10 @@ export default function Header() {
                 Sign Out
               </button>
             </>
-          ) : (
+          )}
+
+          {/* Logged out */}
+          {!employer && !user && (
             <>
               <Link
                 to="/login"
@@ -174,6 +240,18 @@ export default function Header() {
                 onClick={() => setMenuOpen(false)}
               >
                 Sign Up
+              </Link>
+              <Link
+                to="/employer/login"
+                style={{
+                  ...styles.mobileLink,
+                  ...(isActive('/employer/login') ? styles.mobileLinkActive : {}),
+                  color: '#888',
+                  fontSize: '14px',
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                Employer Login
               </Link>
             </>
           )}
@@ -246,6 +324,14 @@ const styles = {
     cursor: 'pointer',
     marginLeft: '4px',
   },
+  employerLoginLink: {
+    fontSize: '13px',
+    color: '#aaa',
+    textDecoration: 'none',
+    fontWeight: '500',
+    marginLeft: '4px',
+    padding: '8px 10px',
+  },
   hamburger: {
     display: 'flex',
     flexDirection: 'column',
@@ -312,4 +398,4 @@ const styles = {
     textAlign: 'center',
     width: '100%',
   },
-        }
+}
