@@ -22,7 +22,7 @@ const STEPS = [
   {
     number: '4',
     title: 'Apply Directly',
-    description: 'No middlemen and no complicated process. You contact the employer directly via WhatsApp or phone. The apply button does the work — it opens a message with your details ready to send.',
+    description: 'No middlemen and no complicated process. You contact the employer directly via WhatsApp or phone, or apply on the platform if you have an account.',
   },
 ]
 
@@ -63,10 +63,12 @@ export default function Home() {
   const [latestJobs, setLatestJobs] = useState([])
   const [jobCount, setJobCount] = useState(0)
   const [seekerCount, setSeekerCount] = useState(0)
+  const [featuredEmployers, setFeaturedEmployers] = useState([])
 
   useEffect(() => {
     fetchLatestJobs()
     fetchStats()
+    fetchFeaturedEmployers()
   }, [])
 
   async function fetchLatestJobs() {
@@ -90,6 +92,57 @@ export default function Home() {
       .eq('status', 'approved')
     if (jobs !== null) setJobCount(jobs)
     if (seekers !== null) setSeekerCount(seekers)
+  }
+
+  async function fetchFeaturedEmployers() {
+    const now = new Date().toISOString()
+
+    // Tier 1 — paid featured (active paid_featured_until date)
+    const { data: paid } = await supabase
+      .from('employers')
+      .select('id, organization_name, lga, about, is_paid_featured, paid_featured_until')
+      .eq('status', 'approved')
+      .eq('is_paid_featured', true)
+      .gt('paid_featured_until', now)
+      .limit(3)
+
+    // Tier 2 — auto: top employers by active job count (excluding already paid)
+    const paidIds = (paid || []).map(e => e.id)
+
+    const { data: allActive } = await supabase
+      .from('job_listings')
+      .select('employer_id, employers(id, organization_name, lga, about, is_paid_featured)')
+      .eq('status', 'approved')
+
+    if (allActive) {
+      // Count active listings per employer
+      const counts = {}
+      allActive.forEach(listing => {
+        const id = listing.employer_id
+        if (!id || paidIds.includes(id)) return
+        if (!counts[id]) {
+          counts[id] = {
+            employer: listing.employers,
+            count: 0,
+          }
+        }
+        counts[id].count += 1
+      })
+
+      // Sort by count, take top 3
+      const autoFeatured = Object.values(counts)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3)
+        .map(item => ({ ...item.employer, activeJobs: item.count, isPaid: false }))
+
+      const paidWithMeta = (paid || []).map(e => ({
+        ...e,
+        activeJobs: allActive.filter(l => l.employer_id === e.id).length,
+        isPaid: true,
+      }))
+
+      setFeaturedEmployers([...paidWithMeta, ...autoFeatured])
+    }
   }
 
   return (
@@ -177,8 +230,44 @@ export default function Home() {
         </div>
       </section>
 
+      {/* FEATURED EMPLOYERS */}
+      {featuredEmployers.length > 0 && (
+        <section style={styles.section}>
+          <div style={styles.sectionInner}>
+            <h2 style={{ ...styles.sectionTitle, marginBottom: '4px' }}>Featured Employers</h2>
+            <p style={{ ...styles.sectionText, marginBottom: '24px' }}>
+              Organisations currently hiring across Oke-Ogun.
+            </p>
+            <div style={styles.employerGrid}>
+              {featuredEmployers.map(employer => (
+                <div key={employer.id} style={styles.employerCard}>
+                  <div style={styles.employerCardTop}>
+                    <div style={styles.employerAvatar}>
+                      {employer.organization_name?.charAt(0).toUpperCase()}
+                    </div>
+                    {employer.isPaid && (
+                      <span style={styles.sponsoredBadge}>Sponsored</span>
+                    )}
+                  </div>
+                  <h3 style={styles.employerName}>{employer.organization_name}</h3>
+                  {employer.lga && (
+                    <p style={styles.employerLga}>📍 {employer.lga}</p>
+                  )}
+                  <div style={styles.employerFooter}>
+                    <span style={styles.activeJobsTag}>
+                      {employer.activeJobs} active {employer.activeJobs === 1 ? 'job' : 'jobs'}
+                    </span>
+                    <Link to="/jobs" style={styles.viewJobsLink}>View Jobs →</Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* LATEST JOBS + WHO WE SERVE */}
-      <section style={styles.section}>
+      <section style={{ ...styles.section, backgroundColor: featuredEmployers.length > 0 ? '#f0f7f3' : '#fff' }}>
         <div style={styles.sectionInner}>
           <div style={styles.twoColGrid}>
 
@@ -291,6 +380,18 @@ const styles = {
   stepNumber: { width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' },
   stepTitle: { fontSize: '16px', fontWeight: '700', color: '#222', marginBottom: '8px' },
   stepDesc: { fontSize: '13px', color: '#666', lineHeight: '1.7' },
+
+  // Featured Employers
+  employerGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' },
+  employerCard: { backgroundColor: '#f9f9f9', borderRadius: '12px', padding: '20px', border: '1px solid #eee' },
+  employerCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' },
+  employerAvatar: { width: '44px', height: '44px', borderRadius: '10px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  sponsoredBadge: { fontSize: '11px', padding: '3px 8px', backgroundColor: '#fff8e1', color: '#b45309', borderRadius: '6px', fontWeight: '700', border: '1px solid #fde68a' },
+  employerName: { fontSize: '15px', fontWeight: '700', color: '#222', marginBottom: '4px' },
+  employerLga: { fontSize: '12px', color: '#888', marginBottom: '12px' },
+  employerFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  activeJobsTag: { fontSize: '12px', padding: '3px 10px', backgroundColor: '#e8f5ee', color: '#1a6b3c', borderRadius: '10px', fontWeight: '600' },
+  viewJobsLink: { fontSize: '13px', color: '#1a6b3c', fontWeight: '700', textDecoration: 'none' },
 
   // Two col
   twoColGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '48px' },
