@@ -161,7 +161,7 @@ export default function Home() {
               and every listing is reviewed before it goes live.
             </p>
             <div style={styles.heroButtons}>
-              <Link to="/register" style={styles.heroBtnPrimary}>Register as Job Seeker</Link>
+              <Link to="/signup" style={styles.heroBtnPrimary}>Register as Job Seeker</Link>
               <Link to="/post-job" style={styles.heroBtnSecondary}>Post a Job</Link>
             </div>
           </div>
@@ -206,7 +206,7 @@ export default function Home() {
               it appears on the platform. That means employers find real candidates,
               and job seekers find real opportunities.
             </p>
-            <Link to="/register" style={styles.inlineBtn}>Register for free →</Link>
+            <Link to="/signup" style={styles.inlineBtn}>Register for free →</Link>
           </div>
         </div>
       </section>
@@ -331,7 +331,7 @@ export default function Home() {
             start here.
           </p>
           <div style={styles.heroButtons}>
-            <Link to="/register" style={styles.heroBtnPrimary}>Register as Job Seeker</Link>
+            <Link to="/signup" style={styles.heroBtnPrimary}>Register as Job Seeker</Link>
             <Link to="/post-job" style={{ ...styles.heroBtnSecondary, borderColor: '#fff', color: '#fff' }}>Post a Job</Link>
           </div>
         </div>
