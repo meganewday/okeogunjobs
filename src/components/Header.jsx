@@ -20,7 +20,7 @@ export default function Header() {
   const navigate = useNavigate()
   const isDesktop = useIsDesktop()
   const { user, profile, signOut } = useAuth()
-  const { employer, employerProfile, employerSignOut } = useEmployerAuth()
+  const { employer, employerProfile, employerLoading, employerSignOut } = useEmployerAuth()
 
   const baseLinks = [
     { to: '/', label: 'Home' },
@@ -69,7 +69,7 @@ export default function Header() {
             ))}
 
             {/* Employer is logged in */}
-            {employer && (
+            {!employerLoading && employer && (
               <>
                 <Link
                   to="/post-job"
@@ -98,7 +98,7 @@ export default function Header() {
             )}
 
             {/* Job seeker is logged in */}
-            {!employer && user && (
+            {!employerLoading && !employer && user && (
               <>
                 <Link
                   to="/profile"
@@ -118,7 +118,7 @@ export default function Header() {
             )}
 
             {/* Logged out */}
-            {!employer && !user && (
+            {!employerLoading && !employer && !user && (
               <>
                 <Link
                   to="/post-job"
@@ -197,7 +197,7 @@ export default function Header() {
           ))}
 
           {/* Employer logged in */}
-          {employer && (
+          {!employerLoading && employer && (
             <>
               <Link
                 to="/post-job"
@@ -228,7 +228,7 @@ export default function Header() {
           )}
 
           {/* Job seeker logged in */}
-          {!employer && user && (
+          {!employerLoading && !employer && user && (
             <>
               <Link
                 to="/profile"
@@ -249,7 +249,7 @@ export default function Header() {
           )}
 
           {/* Logged out */}
-          {!employer && !user && (
+          {!employerLoading && !employer && !user && (
             <>
               <Link
                 to="/post-job"
