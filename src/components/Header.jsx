@@ -25,7 +25,6 @@ export default function Header() {
   const baseLinks = [
     { to: '/', label: 'Home' },
     { to: '/jobs', label: 'Browse Jobs' },
-    { to: '/post-job', label: 'Post a Job' },
   ]
 
   async function handleSignOut() {
@@ -73,6 +72,15 @@ export default function Header() {
             {employer && (
               <>
                 <Link
+                  to="/post-job"
+                  style={{
+                    ...styles.navLink,
+                    ...(isActive('/post-job') ? styles.navLinkActive : {})
+                  }}
+                >
+                  Post a Job
+                </Link>
+                <Link
                   to="/employer/dashboard"
                   style={{
                     ...styles.navLink,
@@ -112,6 +120,15 @@ export default function Header() {
             {/* Logged out */}
             {!employer && !user && (
               <>
+                <Link
+                  to="/post-job"
+                  style={{
+                    ...styles.navLink,
+                    ...(isActive('/post-job') ? styles.navLinkActive : {})
+                  }}
+                >
+                  Post a Job
+                </Link>
                 <Link
                   to="/login"
                   style={{
@@ -183,6 +200,16 @@ export default function Header() {
           {employer && (
             <>
               <Link
+                to="/post-job"
+                style={{
+                  ...styles.mobileLink,
+                  ...(isActive('/post-job') ? styles.mobileLinkActive : {})
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                Post a Job
+              </Link>
+              <Link
                 to="/employer/dashboard"
                 style={{
                   ...styles.mobileLink,
@@ -224,6 +251,16 @@ export default function Header() {
           {/* Logged out */}
           {!employer && !user && (
             <>
+              <Link
+                to="/post-job"
+                style={{
+                  ...styles.mobileLink,
+                  ...(isActive('/post-job') ? styles.mobileLinkActive : {})
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                Post a Job
+              </Link>
               <Link
                 to="/login"
                 style={{

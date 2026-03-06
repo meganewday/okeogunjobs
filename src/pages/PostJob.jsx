@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { verifyRecaptcha } from '../lib/recaptcha'
+import { useEmployerAuth } from '../contexts/EmployerAuthContext'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -25,6 +27,8 @@ const JOB_TYPES = [
 ]
 
 export default function PostJob() {
+  const { employer, employerProfile, employerLoading } = useEmployerAuth()
+  const navigate = useNavigate()
   const [skills, setSkills] = useState([])
   const [labourType, setLabourType] = useState('')
   const [form, setForm] = useState({
@@ -48,6 +52,12 @@ export default function PostJob() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const isDesktop = useIsDesktop()
+
+  useEffect(() => {
+    if (!employerLoading && !employer) {
+      navigate('/employer/login?next=post-job')
+    }
+  }, [employer, employerLoading, navigate])
 
   useEffect(() => {
     async function fetchSkills() {
@@ -116,21 +126,27 @@ export default function PostJob() {
         return
       }
 
-      const { data: employerData, error: employerError } = await supabase
-        .from('employers')
-        .insert({
-          organization_name: form.organization_name.trim(),
-          contact_person: form.contact_person.trim(),
-          phone_number: form.phone_number.trim(),
-          email: form.email.trim() || null,
-          status: 'pending',
-        })
-        .select()
-        .single()
-      if (employerError) throw employerError
+      // Use existing employer profile if logged in, otherwise create one
+      let employerId = employerProfile?.id ?? null
+
+      if (!employerId) {
+        const { data: newEmployer, error: employerError } = await supabase
+          .from('employers')
+          .insert({
+            organization_name: form.organization_name.trim(),
+            contact_person: form.contact_person.trim(),
+            phone_number: form.phone_number.trim(),
+            email: form.email.trim() || null,
+            status: 'pending',
+          })
+          .select()
+          .single()
+        if (employerError) throw employerError
+        employerId = newEmployer.id
+      }
 
       const jobPayload = {
-        employer_id: employerData.id,
+        employer_id: employerId,
         job_title: form.job_title.trim(),
         job_description: form.job_description.trim(),
         job_type: labourType === 'internship' ? 'internship' : form.job_type,
@@ -159,6 +175,14 @@ export default function PostJob() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (employerLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f7f5' }}>
+        <p style={{ color: '#888', fontSize: '15px' }}>Loading...</p>
+      </div>
+    )
   }
 
   if (success) {

@@ -7,6 +7,7 @@ export default function EmployerLogin() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const resetSuccess = searchParams.get('reset') === 'success'
+  const nextPage = searchParams.get('next')
   const [form, setForm] = useState({ email: '', password: '' })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -41,10 +42,9 @@ export default function EmployerLogin() {
         .single()
 
       if (profile) {
-        navigate('/employer/dashboard')
+        navigate(nextPage === 'post-job' ? '/post-job' : '/employer/dashboard')
       } else {
-        // Account exists but no employer profile — send to post-job
-        navigate('/post-job?auth=true')
+        navigate('/post-job')
       }
     } catch (err) {
       if (err.message?.includes('Invalid login credentials')) {
@@ -68,6 +68,13 @@ export default function EmployerLogin() {
         {resetSuccess && (
           <div style={styles.successBanner}>
             Password updated. You can now log in with your new password.
+          </div>
+        )}
+
+        {nextPage === 'post-job' && !resetSuccess && (
+          <div style={styles.infoBanner}>
+            You need an employer account to post a job. Log in below or{' '}
+            <a href="/employer/signup" style={styles.infoLink}>create a free account</a>.
           </div>
         )}
 
@@ -134,6 +141,8 @@ const styles = {
   title: { fontSize: '22px', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
   subtitle: { fontSize: '14px', color: '#666', lineHeight: '1.6', marginBottom: '24px' },
   successBanner: { backgroundColor: '#e8f5ee', color: '#1a6b3c', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
+  infoBanner: { backgroundColor: '#fffbeb', color: '#92400e', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', lineHeight: '1.5' },
+  infoLink: { color: '#1a6b3c', fontWeight: '700', textDecoration: 'none' },
   field: { marginBottom: '18px' },
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },
   input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' },
