@@ -10,15 +10,14 @@ export function EmployerAuthProvider({ children }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setEmployer(session?.user ?? null)
       if (session?.user) fetchEmployerProfile(session.user.id)
       else setEmployerLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmployer(session?.user ?? null)
       if (session?.user) fetchEmployerProfile(session.user.id)
       else {
+        setEmployer(null)
         setEmployerProfile(null)
         setEmployerLoading(false)
       }
@@ -33,7 +32,14 @@ export function EmployerAuthProvider({ children }) {
       .select('*')
       .eq('auth_user_id', userId)
       .single()
-    setEmployerProfile(data ?? null)
+    // Only set employer session if this user actually has an employer profile
+    if (data) {
+      setEmployer({ id: userId })
+      setEmployerProfile(data)
+    } else {
+      setEmployer(null)
+      setEmployerProfile(null)
+    }
     setEmployerLoading(false)
   }
 
