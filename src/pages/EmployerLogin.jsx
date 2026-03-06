@@ -44,7 +44,7 @@ export default function EmployerLogin() {
       if (profile) {
         navigate(nextPage === 'post-job' ? '/post-job' : '/employer/dashboard')
       } else {
-        navigate('/post-job')
+        navigate(nextPage === 'post-job' ? '/post-job' : '/employer/dashboard')
       }
     } catch (err) {
       if (err.message?.includes('Invalid login credentials')) {
