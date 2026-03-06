@@ -170,9 +170,9 @@ export default function JobSeekerRegister() {
 
     setSubmitting(true)
     try {
-      const passed = await verifyRecaptcha('register')
-      if (!passed) {
-        setError('We could not verify your submission. Please try again.')
+      const { allowed, error: captchaError } = await verifyRecaptcha('register')
+      if (!allowed) {
+        setError(captchaError || 'We could not verify your submission. Please try again.')
         setSubmitting(false)
         return
       }

@@ -35,9 +35,9 @@ export default function JobSeekerSignup() {
 
     setSubmitting(true)
     try {
-      const passed = await verifyRecaptcha('signup')
-      if (!passed) {
-        setError('We could not verify your submission. Please try again.')
+      const { allowed, error: captchaError } = await verifyRecaptcha('signup')
+      if (!allowed) {
+        setError(captchaError || 'We could not verify your submission. Please try again.')
         setSubmitting(false)
         return
       }
