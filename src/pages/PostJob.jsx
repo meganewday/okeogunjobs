@@ -138,6 +138,7 @@ export default function PostJob() {
             phone_number: form.phone_number.trim(),
             email: form.email.trim() || null,
             status: 'pending',
+            ...(employer ? { auth_user_id: employer.id } : {}),
           })
           .select()
           .single()
