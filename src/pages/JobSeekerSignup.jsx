@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { verifyRecaptcha } from '../lib/recaptcha'
 
 export default function JobSeekerSignup() {
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' })
@@ -34,6 +35,13 @@ export default function JobSeekerSignup() {
 
     setSubmitting(true)
     try {
+      const passed = await verifyRecaptcha('signup')
+      if (!passed) {
+        setError('We could not verify your submission. Please try again.')
+        setSubmitting(false)
+        return
+      }
+
       const { error: signUpError } = await supabase.auth.signUp({
         email: form.email.trim(),
         password: form.password,

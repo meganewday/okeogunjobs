@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { useAuth } from '../contexts/AuthContext'
+import { verifyRecaptcha } from '../lib/recaptcha'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -169,6 +170,13 @@ export default function JobSeekerRegister() {
 
     setSubmitting(true)
     try {
+      const passed = await verifyRecaptcha('register')
+      if (!passed) {
+        setError('We could not verify your submission. Please try again.')
+        setSubmitting(false)
+        return
+      }
+
       let cv_url = null
       if (cvFile) {
         const fileExt = cvFile.name.split('.').pop()

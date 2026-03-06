@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { verifyRecaptcha } from '../lib/recaptcha'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -38,7 +39,6 @@ export default function PostJob() {
     lga: '',
     selectedSkills: [],
     application_method: '',
-    // Internship fields
     department_unit: '',
     duration: '',
     stipend_available: '',
@@ -109,6 +109,13 @@ export default function PostJob() {
 
     setSubmitting(true)
     try {
+      const passed = await verifyRecaptcha('post_job')
+      if (!passed) {
+        setError('We could not verify your submission. Please try again.')
+        setSubmitting(false)
+        return
+      }
+
       const { data: employerData, error: employerError } = await supabase
         .from('employers')
         .insert({
@@ -192,7 +199,6 @@ export default function PostJob() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
 
-          {/* LABOUR TYPE SELECTOR */}
           <div style={styles.field}>
             <label style={styles.label}>What type of position is this? *</label>
             <p style={styles.fieldHint}>This determines what information we collect about the role.</p>
@@ -310,7 +316,6 @@ export default function PostJob() {
                 )}
               </div>
 
-              {/* Internship-specific fields */}
               {labourType === 'internship' && (
                 <>
                   <h3 style={styles.sectionHeader}>Internship / SIWES Details</h3>
@@ -352,7 +357,6 @@ export default function PostJob() {
                 </>
               )}
 
-              {/* Job Description */}
               <div style={styles.field}>
                 <label style={styles.label}>Job Description *</label>
                 <textarea
@@ -368,7 +372,6 @@ export default function PostJob() {
                 />
               </div>
 
-              {/* Skills */}
               {labourType === 'skilled' && (
                 <div style={styles.field}>
                   <label style={styles.label}>Skills Required — select all that apply</label>
@@ -397,7 +400,7 @@ export default function PostJob() {
 
               {labourType === 'unskilled' && (
                 <div style={styles.field}>
-                  <label style={styles.label}>Type of Labour Required — select all that apply</label>
+                  <label style={styles.field}>Type of Labour Required — select all that apply</label>
                   {unskilledCategories.map(([category, categorySkills]) => (
                     <div key={category} style={styles.skillGroup}>
                       <div style={styles.skillGrid}>
