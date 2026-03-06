@@ -42,7 +42,7 @@ export default function JobSeekerSignup() {
         return
       }
 
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: form.email.trim(),
         password: form.password,
         options: {
@@ -50,6 +50,14 @@ export default function JobSeekerSignup() {
         },
       })
       if (signUpError) throw signUpError
+
+      // Supabase silently succeeds for duplicate emails when confirmation is ON
+      // Detect it via empty identities array
+      if (signUpData?.user?.identities?.length === 0) {
+        setError('An account with this email already exists. Try logging in instead.')
+        setSubmitting(false)
+        return
+      }
 
       setSentEmail(form.email.trim())
       setSent(true)
