@@ -29,7 +29,7 @@ const JOB_TYPE_LABELS = {
 }
 
 export default function EmployerDashboard() {
-  const { employer, employerProfile, employerLoading, employerSignOut } = useEmployerAuth()
+  const { employer, employerProfile, employerLoading, employerSignOut, refreshEmployerProfile } = useEmployerAuth()
   const navigate = useNavigate()
   const isDesktop = useIsDesktop()
 
@@ -38,6 +38,10 @@ export default function EmployerDashboard() {
   const [signingOut, setSigningOut] = useState(false)
   const [activeTab, setActiveTab] = useState('listings')
   const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, closed: 0 })
+
+  // Logo upload
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoError, setLogoError] = useState('')
 
   useEffect(() => {
     if (!employerLoading && !employer) {
@@ -87,6 +91,39 @@ export default function EmployerDashboard() {
       .update({ status: 'closed' })
       .eq('id', jobId)
     if (!error) fetchListings()
+  }
+
+  async function handleLogoChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      setLogoError('Only JPG, PNG or WebP images are allowed.')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError('Logo must be under 2MB.')
+      return
+    }
+    setLogoError('')
+    setLogoUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const fileName = `employer_${employerProfile.id}_${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('avatars').upload(fileName, file, { upsert: true })
+      if (uploadError) throw uploadError
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      const { error: updateError } = await supabase
+        .from('employers').update({ logo_url: urlData.publicUrl }).eq('id', employerProfile.id)
+      if (updateError) throw updateError
+      if (refreshEmployerProfile) await refreshEmployerProfile()
+    } catch (err) {
+      console.error(err)
+      setLogoError('Logo upload failed. Please try again.')
+    } finally {
+      setLogoUploading(false)
+    }
   }
 
   if (employerLoading) {
@@ -238,6 +275,33 @@ export default function EmployerDashboard() {
         {/* EMPLOYER DETAILS TAB */}
         {activeTab === 'profile' && (
           <div style={styles.detailCard}>
+            {/* Logo */}
+            <div style={styles.logoRow}>
+              <div style={styles.logoWrap}>
+                {employerProfile.logo_url ? (
+                  <img src={employerProfile.logo_url} alt="Logo" style={styles.logoImg} />
+                ) : (
+                  <div style={styles.logoInitial}>
+                    {employerProfile.organization_name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <label style={styles.logoEditBtn} title={logoUploading ? 'Uploading...' : 'Upload logo'}>
+                  {logoUploading ? '⏳' : '📷'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoChange}
+                    style={{ display: 'none' }}
+                    disabled={logoUploading}
+                  />
+                </label>
+              </div>
+              <div>
+                <p style={styles.logoHint}>Upload your organisation logo (JPG, PNG or WebP, max 2MB)</p>
+                {logoError && <p style={styles.logoError}>{logoError}</p>}
+              </div>
+            </div>
+
             <h3 style={styles.detailCardTitle}>Employer Details</h3>
             <div style={styles.detailGrid}>
               <DetailRow label="Organisation" value={employerProfile.organization_name} />
@@ -320,6 +384,13 @@ const styles = {
   detailCardTitle: { fontSize: '15px', fontWeight: '700', color: '#1a6b3c', marginBottom: '20px', paddingBottom: '8px', borderBottom: '2px solid #e8f5ee' },
   detailGrid: {},
   detailNote: { fontSize: '13px', color: '#aaa', marginTop: '8px' },
+  logoRow: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' },
+  logoWrap: { position: 'relative', flexShrink: 0 },
+  logoImg: { width: '72px', height: '72px', borderRadius: '12px', objectFit: 'cover', display: 'block', border: '1px solid #eee' },
+  logoInitial: { width: '72px', height: '72px', borderRadius: '12px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '28px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  logoEditBtn: { position: 'absolute', bottom: '-4px', right: '-4px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#fff', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' },
+  logoHint: { fontSize: '13px', color: '#888', margin: 0 },
+  logoError: { fontSize: '12px', color: '#e53e3e', marginTop: '4px' },
 
   // Empty + buttons
   emptyCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
