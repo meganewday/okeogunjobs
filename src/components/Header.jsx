@@ -104,16 +104,20 @@ export default function Header() {
                   to="/profile"
                   style={{
                     ...styles.navLink,
-                    ...(isActive('/profile') ? styles.navLinkActive : {})
+                    ...(isActive('/profile') ? styles.navLinkActive : {}),
+                    display: 'flex', alignItems: 'center', gap: '8px'
                   }}
                 >
-                  {profile?.full_name
-                    ? profile.full_name.split(' ')[0]
-                    : 'My Profile'}
+                  {profile?.photo_url ? (
+                    <img src={profile.photo_url} alt="" style={styles.navAvatar} />
+                  ) : (
+                    <div style={styles.navAvatarInitial}>
+                      {profile?.full_name?.charAt(0).toUpperCase() || '?'}
+                    </div>
+                  )}
+                  {profile?.full_name ? profile.full_name.split(' ')[0] : 'My Profile'}
                 </Link>
-                <button onClick={handleSignOut} style={styles.signOutBtn}>
-                  Sign Out
-                </button>
+                <button onClick={handleSignOut} style={styles.signOutBtn}>Sign Out</button>
               </>
             )}
 
@@ -234,17 +238,21 @@ export default function Header() {
                 to="/profile"
                 style={{
                   ...styles.mobileLink,
-                  ...(isActive('/profile') ? styles.mobileLinkActive : {})
+                  ...(isActive('/profile') ? styles.mobileLinkActive : {}),
+                  display: 'flex', alignItems: 'center', gap: '10px'
                 }}
                 onClick={() => setMenuOpen(false)}
               >
-                {profile?.full_name
-                  ? `${profile.full_name.split(' ')[0]}'s Profile`
-                  : 'My Profile'}
+                {profile?.photo_url ? (
+                  <img src={profile.photo_url} alt="" style={styles.navAvatar} />
+                ) : (
+                  <div style={styles.navAvatarInitial}>
+                    {profile?.full_name?.charAt(0).toUpperCase() || '?'}
+                  </div>
+                )}
+                {profile?.full_name ? `${profile.full_name.split(' ')[0]}'s Profile` : 'My Profile'}
               </Link>
-              <button onClick={handleSignOut} style={styles.mobileSignOutBtn}>
-                Sign Out
-              </button>
+              <button onClick={handleSignOut} style={styles.mobileSignOutBtn}>Sign Out</button>
             </>
           )}
 
@@ -369,6 +377,8 @@ const styles = {
     marginLeft: '4px',
     padding: '8px 10px',
   },
+  navAvatar: { width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 },
+  navAvatarInitial: { width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   hamburger: {
     display: 'flex',
     flexDirection: 'column',
