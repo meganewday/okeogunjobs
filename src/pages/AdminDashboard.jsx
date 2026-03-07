@@ -222,9 +222,18 @@ export default function AdminDashboard() {
           {jobSeekers.map(seeker => (
             <div key={seeker.id} style={styles.card}>
               <div style={styles.cardHeader}>
-                <div>
-                  <h3 style={styles.cardTitle}>{seeker.full_name}</h3>
-                  <p style={styles.cardSub}>{seeker.lga || 'LGA not specified'}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {seeker.photo_url ? (
+                    <img src={seeker.photo_url} alt="" style={styles.seekerAvatar} />
+                  ) : (
+                    <div style={styles.seekerAvatarInitial}>
+                      {seeker.full_name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <h3 style={styles.cardTitle}>{seeker.full_name}</h3>
+                    <p style={styles.cardSub}>{seeker.lga || 'LGA not specified'}</p>
+                  </div>
                 </div>
                 {statusBadge(seeker.status)}
               </div>
@@ -331,4 +340,6 @@ const styles = {
   rejectBtn: { padding: '8px 20px', backgroundColor: '#fff', color: '#e53e3e', border: '1px solid #e53e3e', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
   closeBtn: { padding: '8px 20px', backgroundColor: '#fff', color: '#888', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
   link: { color: '#1a6b3c', textDecoration: 'underline' },
+  seekerAvatar: { width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 },
+  seekerAvatarInitial: { width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 }
