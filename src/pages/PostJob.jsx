@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { verifyRecaptcha } from '../lib/recaptcha'
@@ -32,10 +32,6 @@ export default function PostJob() {
   const [skills, setSkills] = useState([])
   const [labourType, setLabourType] = useState('')
   const [form, setForm] = useState({
-    organization_name: '',
-    contact_person: '',
-    phone_number: '',
-    email: '',
     job_title: '',
     job_description: '',
     job_type: '',
@@ -70,6 +66,13 @@ export default function PostJob() {
     fetchSkills()
   }, [])
 
+  // Pre-fill location from employer profile when it loads
+  useEffect(() => {
+    if (employerProfile?.lga) {
+      setForm(prev => ({ ...prev, lga: prev.lga || employerProfile.lga }))
+    }
+  }, [employerProfile])
+
   function handleChange(e) {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
@@ -100,10 +103,6 @@ export default function PostJob() {
       setError('Please select whether this is a skilled, unskilled, or internship position.')
       return
     }
-    if (!form.organization_name || !form.contact_person || !form.phone_number) {
-      setError('Organisation name, contact person, and phone number are required.')
-      return
-    }
     if (!form.job_title || !form.job_description) {
       setError('Job title and job description are required.')
       return
@@ -126,24 +125,12 @@ export default function PostJob() {
         return
       }
 
-      // Use existing employer profile if logged in, otherwise create one
-      let employerId = employerProfile?.id ?? null
-
+      // Employer must be logged in — profile is auto-attached
+      const employerId = employerProfile?.id
       if (!employerId) {
-        const { data: newEmployer, error: employerError } = await supabase
-          .from('employers')
-          .insert({
-            organization_name: form.organization_name.trim(),
-            contact_person: form.contact_person.trim(),
-            phone_number: form.phone_number.trim(),
-            email: form.email.trim() || null,
-            status: 'pending',
-            ...(employer ? { auth_user_id: employer.id } : {}),
-          })
-          .select()
-          .single()
-        if (employerError) throw employerError
-        employerId = newEmployer.id
+        setError('Your employer profile could not be found. Please contact support.')
+        setSubmitting(false)
+        return
       }
 
       const jobPayload = {
@@ -190,11 +177,13 @@ export default function PostJob() {
     return (
       <div style={styles.successWrap}>
         <div style={styles.successBox}>
+          <div style={{ fontSize: '40px', marginBottom: '16px' }}>✅</div>
           <h2 style={styles.successTitle}>Job Submitted</h2>
           <p style={styles.successText}>
             Your listing has been received and is pending review. Once approved, it will
             appear on the jobs page. This usually takes no more than 24 hours.
           </p>
+          <Link to="/employer/dashboard" style={styles.dashboardBtn}>Go to Dashboard</Link>
         </div>
       </div>
     )
@@ -218,12 +207,37 @@ export default function PostJob() {
       <div style={{ maxWidth: isDesktop ? '860px' : '600px', margin: '0 auto' }}>
         <h1 style={styles.title}>Post a Job</h1>
         <p style={styles.subtitle}>
-          Fill in the details below to list a job on {APP_NAME}.
-          All listings go through a quick review before they are published. Fields marked * are required.
+          Fill in the job details below. Your organisation information is already attached
+          to your account — you do not need to enter it again.
+          Fields marked * are required.
         </p>
+
+        {/* Employer profile summary card */}
+        {employerProfile && (
+          <div style={styles.profileCard}>
+            <div style={styles.profileCardLeft}>
+              {employerProfile.logo_url ? (
+                <img src={employerProfile.logo_url} alt="logo" style={styles.profileLogo} />
+              ) : (
+                <div style={styles.profileInitial}>
+                  {employerProfile.organization_name?.[0]?.toUpperCase() || '?'}
+                </div>
+              )}
+              <div>
+                <p style={styles.profileName}>{employerProfile.organization_name}</p>
+                <p style={styles.profileMeta}>
+                  {[employerProfile.contact_person, employerProfile.lga, employerProfile.industry]
+                    .filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            </div>
+            <Link to="/employer/dashboard" style={styles.profileEditLink}>Edit profile</Link>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={styles.form}>
 
+          {/* Labour type selector */}
           <div style={styles.field}>
             <label style={styles.label}>What type of position is this? *</label>
             <p style={styles.fieldHint}>This determines what information we collect about the role.</p>
@@ -251,34 +265,6 @@ export default function PostJob() {
 
           {labourType && (
             <>
-              <h3 style={styles.sectionHeader}>Employer Information</h3>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
-                gap: '0 24px',
-              }}>
-                <div style={styles.field}>
-                  <label style={styles.label}>Organisation / Employer Name *</label>
-                  <input style={styles.input} type="text" name="organization_name" value={form.organization_name} onChange={handleChange} placeholder="e.g. Saki Farms Ltd" />
-                </div>
-
-                <div style={styles.field}>
-                  <label style={styles.label}>Contact Person *</label>
-                  <input style={styles.input} type="text" name="contact_person" value={form.contact_person} onChange={handleChange} placeholder="Full name of contact person" />
-                </div>
-
-                <div style={styles.field}>
-                  <label style={styles.label}>Phone Number *</label>
-                  <input style={styles.input} type="tel" name="phone_number" value={form.phone_number} onChange={handleChange} placeholder="e.g. 08012345678" />
-                </div>
-
-                <div style={styles.field}>
-                  <label style={styles.label}>Email Address (optional)</label>
-                  <input style={styles.input} type="email" name="email" value={form.email} onChange={handleChange} placeholder="e.g. contact@company.com" />
-                </div>
-              </div>
-
               <h3 style={styles.sectionHeader}>Job Details</h3>
 
               <div style={{
@@ -425,7 +411,7 @@ export default function PostJob() {
 
               {labourType === 'unskilled' && (
                 <div style={styles.field}>
-                  <label style={styles.field}>Type of Labour Required — select all that apply</label>
+                  <label style={styles.label}>Type of Labour Required — select all that apply</label>
                   {unskilledCategories.map(([category, categorySkills]) => (
                     <div key={category} style={styles.skillGroup}>
                       <div style={styles.skillGrid}>
@@ -496,6 +482,13 @@ const styles = {
   page: { minHeight: '100vh', backgroundColor: '#f5f7f5', padding: '40px 24px' },
   title: { fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
   subtitle: { fontSize: '14px', color: '#555', marginBottom: '24px', lineHeight: '1.6' },
+  profileCard: { backgroundColor: '#fff', border: '1px solid #e0ede6', borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' },
+  profileCardLeft: { display: 'flex', alignItems: 'center', gap: '12px' },
+  profileLogo: { width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #ddd' },
+  profileInitial: { width: '44px', height: '44px', borderRadius: '8px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  profileName: { fontSize: '14px', fontWeight: '700', color: '#222', margin: 0 },
+  profileMeta: { fontSize: '12px', color: '#888', margin: '2px 0 0 0' },
+  profileEditLink: { fontSize: '13px', color: '#1a6b3c', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap' },
   form: { backgroundColor: '#fff', borderRadius: '12px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
   sectionHeader: { fontSize: '16px', fontWeight: '700', color: '#1a6b3c', marginBottom: '16px', marginTop: '24px', paddingBottom: '8px', borderBottom: '2px solid #e8f5ee' },
   field: { marginBottom: '20px' },
@@ -503,11 +496,7 @@ const styles = {
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },
   input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' },
   labourTypeRow: { display: 'flex', gap: '12px', flexWrap: 'wrap' },
-  labourTypeBtn: {
-    flex: '1', minWidth: '160px', padding: '16px', borderRadius: '10px', border: '2px solid #ddd',
-    backgroundColor: '#fafafa', cursor: 'pointer', textAlign: 'left', display: 'flex',
-    flexDirection: 'column', gap: '4px',
-  },
+  labourTypeBtn: { flex: '1', minWidth: '160px', padding: '16px', borderRadius: '10px', border: '2px solid #ddd', backgroundColor: '#fafafa', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '4px' },
   labourTypeBtnActive: { borderColor: '#1a6b3c', backgroundColor: '#e8f5ee' },
   labourTypeBtnLabel: { fontSize: '14px', fontWeight: '700', color: '#222' },
   labourTypeBtnDesc: { fontSize: '12px', color: '#666', lineHeight: '1.4' },
@@ -522,5 +511,6 @@ const styles = {
   successWrap: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f7f5', padding: '24px' },
   successBox: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px 32px', maxWidth: '480px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
   successTitle: { fontSize: '22px', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '12px' },
-  successText: { fontSize: '15px', color: '#555', lineHeight: '1.6' },
+  successText: { fontSize: '15px', color: '#555', lineHeight: '1.6', marginBottom: '24px' },
+  dashboardBtn: { display: 'inline-block', padding: '12px 28px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '15px', fontWeight: '600', borderRadius: '8px', textDecoration: 'none' },
 }
