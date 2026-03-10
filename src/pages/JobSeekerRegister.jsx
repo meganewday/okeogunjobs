@@ -205,7 +205,7 @@ export default function JobSeekerRegister() {
         seeker_type: seekerType,
         cv_url,
         status: 'approved',
-        ...(user ? { auth_user_id: user.id, email: user.email } : {}),
+        ...(user ? { auth_user_id: user.id } : {}),
       }
 
       if (seekerType === 'student') {
@@ -228,7 +228,7 @@ export default function JobSeekerRegister() {
       }
     } catch (err) {
       console.error(err)
-      setError('Something went wrong. Please try again.')
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
     }
