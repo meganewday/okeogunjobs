@@ -98,7 +98,8 @@ export default function EmployerSignup() {
       // 2. Create employer profile row immediately
       const userId = signUpData.user?.id
       if (userId) {
-        await supabase.from('employers').insert({
+        // Try inserting now — may fail silently if RLS blocks unauthenticated inserts
+        const { error: insertError } = await supabase.from('employers').insert({
           auth_user_id: userId,
           organization_name: profile.organization_name.trim(),
           contact_person: profile.contact_person.trim(),
@@ -109,7 +110,23 @@ export default function EmployerSignup() {
           description: profile.description.trim() || null,
           status: 'pending',
         })
-        // Note: insert errors are non-fatal here — profile can be completed later
+
+        if (insertError) {
+          // RLS blocked it — save to localStorage so EmployerAuthContext can retry after login
+          try {
+            localStorage.setItem('okeogun_pending_employer', JSON.stringify({
+              auth_user_id: userId,
+              organization_name: profile.organization_name.trim(),
+              contact_person: profile.contact_person.trim(),
+              phone_number: profile.phone_number.trim(),
+              email: account.email.trim(),
+              lga: profile.lga || null,
+              industry: profile.industry || null,
+              description: profile.description.trim() || null,
+              status: 'pending',
+            }))
+          } catch (_) {}
+        }
       }
 
       setSentEmail(account.email.trim())
