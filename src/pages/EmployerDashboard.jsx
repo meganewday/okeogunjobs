@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useEmployerAuth } from '../contexts/EmployerAuthContext'
 import { APP_NAME } from '../config/constants'
+import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
+import { useInactivityTimeout, clearActivityClock } from '../lib/useInactivityTimeout'
+
+const EMPLOYER_TIMEOUT = 8 * 60 * 60 * 1000 // 8 hours
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -43,6 +47,12 @@ export default function EmployerDashboard() {
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoError, setLogoError] = useState('')
 
+  useInactivityTimeout(EMPLOYER_TIMEOUT, async () => {
+    clearActivityClock()
+    await employerSignOut()
+    navigate('/employer/login?reason=timeout')
+  })
+
   useEffect(() => {
     if (!employerLoading && !employer) {
       navigate('/employer/login')
@@ -81,9 +91,17 @@ export default function EmployerDashboard() {
 
   async function handleSignOut() {
     setSigningOut(true)
+    clearActivity('employer')
     await employerSignOut()
     navigate('/')
   }
+
+  const handleTimeout = useCallback(async () => {
+    await employerSignOut()
+    navigate('/employer/login?timeout=1')
+  }, [employerSignOut, navigate])
+
+  useInactivityTimeout('employer', handleTimeout)
 
   async function handleCloseJob(jobId) {
     const { error } = await supabase

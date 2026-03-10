@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { recordActivity } from '../lib/inactivity'
 
 export default function JobSeekerLogin() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const resetSuccess = searchParams.get('reset') === 'success'
+  const timedOut = searchParams.get('timeout') === '1'
   const [form, setForm] = useState({ email: '', password: '' })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -41,9 +43,9 @@ export default function JobSeekerLogin() {
         .single()
 
       if (profile) {
+        recordActivity('seeker')
         navigate('/profile')
       } else {
-        // Account exists but no profile yet — send to register
         navigate('/register?auth=true')
       }
     } catch (err) {
@@ -68,6 +70,16 @@ export default function JobSeekerLogin() {
         {resetSuccess && (
           <div style={styles.successBanner}>
             Password updated. You can now log in with your new password.
+          </div>
+        )}
+        {timedOut && (
+          <div style={styles.timeoutBanner}>
+            Your session expired after 24 hours of inactivity. Please log in again.
+          </div>
+        )}
+        {timedOut && (
+          <div style={styles.timeoutBanner}>
+            Your session expired due to inactivity. Please log in again.
           </div>
         )}
 
@@ -139,6 +151,8 @@ const styles = {
   forgotRow: { textAlign: 'right', marginBottom: '16px', marginTop: '-8px' },
   forgotLink: { fontSize: '13px', color: '#1a6b3c', textDecoration: 'none', fontWeight: '600' },
   successBanner: { backgroundColor: '#e8f5ee', color: '#1a6b3c', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
+  timeoutBanner: { backgroundColor: '#fff8e1', color: '#b45309', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
+  timeoutBanner: { backgroundColor: '#fff8e1', color: '#b45309', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
   error: { color: '#e53e3e', fontSize: '13px', marginBottom: '12px' },
   btn: { width: '100%', padding: '13px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '15px', fontWeight: '600', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '4px' },
   btnDisabled: { backgroundColor: '#aaa', cursor: 'not-allowed' },

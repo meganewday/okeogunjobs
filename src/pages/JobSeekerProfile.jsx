@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { APP_NAME } from '../config/constants'
+import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
+import { useInactivityTimeout, clearActivityClock } from '../lib/useInactivityTimeout'
+
+const SEEKER_TIMEOUT = 24 * 60 * 60 * 1000 // 24 hours
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -98,6 +102,12 @@ export default function JobSeekerProfile() {
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoError, setPhotoError] = useState('')
 
+  useInactivityTimeout(SEEKER_TIMEOUT, async () => {
+    clearActivityClock()
+    await signOut()
+    navigate('/login?reason=timeout')
+  })
+
   useEffect(() => {
     if (!loading && !user) navigate('/login')
   }, [user, loading, navigate])
@@ -160,9 +170,17 @@ export default function JobSeekerProfile() {
 
   async function handleSignOut() {
     setSigningOut(true)
+    clearActivity('seeker')
     await signOut()
     navigate('/')
   }
+
+  const handleTimeout = useCallback(async () => {
+    await signOut()
+    navigate('/login?timeout=1')
+  }, [signOut, navigate])
+
+  useInactivityTimeout('seeker', handleTimeout)
 
   async function handlePhotoChange(e) {
     const file = e.target.files[0]

@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { recordActivity } from '../lib/inactivity'
 
 export default function EmployerLogin() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const resetSuccess = searchParams.get('reset') === 'success'
   const nextPage = searchParams.get('next')
+  const timedOut = searchParams.get('timeout') === '1'
   const [form, setForm] = useState({ email: '', password: '' })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -42,8 +44,10 @@ export default function EmployerLogin() {
         .single()
 
       if (profile) {
+        recordActivity('employer')
         navigate(nextPage === 'post-job' ? '/post-job' : '/employer/dashboard')
       } else {
+        recordActivity('employer')
         navigate(nextPage === 'post-job' ? '/post-job' : '/employer/dashboard')
       }
     } catch (err) {
@@ -71,7 +75,13 @@ export default function EmployerLogin() {
           </div>
         )}
 
-        {nextPage === 'post-job' && !resetSuccess && (
+        {timedOut && (
+          <div style={styles.timeoutBanner}>
+            Your session expired after 8 hours of inactivity. Please log in again.
+          </div>
+        )}
+
+        {nextPage === 'post-job' && !resetSuccess && !timedOut && (
           <div style={styles.infoBanner}>
             You need an employer account to post a job. Log in below or{' '}
             <a href="/employer/signup" style={styles.infoLink}>create a free account</a>.
@@ -141,6 +151,7 @@ const styles = {
   title: { fontSize: '22px', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
   subtitle: { fontSize: '14px', color: '#666', lineHeight: '1.6', marginBottom: '24px' },
   successBanner: { backgroundColor: '#e8f5ee', color: '#1a6b3c', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
+  timeoutBanner: { backgroundColor: '#fff8e1', color: '#b45309', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
   infoBanner: { backgroundColor: '#fffbeb', color: '#92400e', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', lineHeight: '1.5' },
   infoLink: { color: '#1a6b3c', fontWeight: '700', textDecoration: 'none' },
   field: { marginBottom: '18px' },

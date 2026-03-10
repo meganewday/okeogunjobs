@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { APP_NAME } from '../config/constants'
+import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
+import { useInactivityTimeout, clearActivityClock } from '../lib/useInactivityTimeout'
+
+const ADMIN_TIMEOUT = 60 * 60 * 1000 // 1 hour
 
 export default function AdminDashboard() {
   const [session, setSession] = useState(null)
@@ -62,10 +66,24 @@ export default function AdminDashboard() {
     if (!error) fetchJobSeekers()
   }
 
+  useInactivityTimeout(ADMIN_TIMEOUT, async () => {
+    clearActivityClock()
+    await supabase.auth.signOut()
+    navigate('/admin/login?reason=timeout')
+  })
+
   async function handleLogout() {
+    clearActivity('admin')
     await supabase.auth.signOut()
     navigate('/admin/login')
   }
+
+  const handleTimeout = useCallback(async () => {
+    await supabase.auth.signOut()
+    navigate('/admin/login?timeout=1')
+  }, [navigate])
+
+  useInactivityTimeout('admin', handleTimeout)
 
   const pendingJobs = jobListings.filter(j => j.status === 'pending')
   const approvedJobs = jobListings.filter(j => j.status === 'approved')
