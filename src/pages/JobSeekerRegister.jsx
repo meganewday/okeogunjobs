@@ -63,6 +63,10 @@ const SEEKER_TYPES = [
   },
 ]
 
+function isValidNin(nin) {
+  return /^\d{11}$/.test(nin.trim())
+}
+
 export default function JobSeekerRegister() {
   const { user, refreshProfile } = useAuth()
   const navigate = useNavigate()
@@ -77,6 +81,7 @@ export default function JobSeekerRegister() {
     location: '',
     ward: '',
     lga: '',
+    nin: '',
     selectedSkills: [],
     education_level: '',
     years_of_experience: '',
@@ -163,6 +168,14 @@ export default function JobSeekerRegister() {
       setError('Full name and phone number are required.')
       return
     }
+    if (!form.nin.trim()) {
+      setError('Your NIN (National Identification Number) is required.')
+      return
+    }
+    if (!isValidNin(form.nin)) {
+      setError('NIN must be exactly 11 digits with no spaces or letters.')
+      return
+    }
     if (!form.consent) {
       setError('You need to agree to the privacy policy before submitting.')
       return
@@ -173,6 +186,19 @@ export default function JobSeekerRegister() {
       const { allowed, error: captchaError } = await verifyRecaptcha('register')
       if (!allowed) {
         setError(captchaError || 'We could not verify your submission. Please try again.')
+        setSubmitting(false)
+        return
+      }
+
+      // Check NIN is not already registered
+      const { data: existingNin } = await supabase
+        .from('job_seekers')
+        .select('id')
+        .eq('nin', form.nin.trim())
+        .maybeSingle()
+
+      if (existingNin) {
+        setError('This NIN is already registered. If you have already registered before, log in to your account instead.')
         setSubmitting(false)
         return
       }
@@ -198,6 +224,7 @@ export default function JobSeekerRegister() {
         location: form.location.trim() || null,
         ward: form.ward.trim() || null,
         lga: form.lga || null,
+        nin: form.nin.trim(),
         skills: form.selectedSkills.length > 0 ? form.selectedSkills : null,
         education_level: form.education_level || null,
         years_of_experience: form.years_of_experience ? parseInt(form.years_of_experience) : 0,
@@ -216,7 +243,7 @@ export default function JobSeekerRegister() {
         payload.lga = form.preferred_lga || form.lga || null
       }
 
-      // If logged in, check for existing profile first to avoid duplicates
+      // If logged in, check for existing profile to avoid duplicates
       if (user) {
         const { data: existing } = await supabase
           .from('job_seekers')
@@ -332,6 +359,35 @@ export default function JobSeekerRegister() {
                 <div style={styles.field}>
                   <label style={styles.label}>WhatsApp Number (if different)</label>
                   <input style={styles.input} type="tel" name="whatsapp_number" value={form.whatsapp_number} onChange={handleChange} placeholder="e.g. 08012345678" />
+                </div>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>
+                    NIN (National Identification Number) *
+                  </label>
+                  <input
+                    style={{
+                      ...styles.input,
+                      ...(form.nin && !isValidNin(form.nin) ? styles.inputError : {}),
+                      ...(form.nin && isValidNin(form.nin) ? styles.inputValid : {}),
+                    }}
+                    type="text"
+                    name="nin"
+                    value={form.nin}
+                    onChange={handleChange}
+                    placeholder="11-digit number"
+                    maxLength={11}
+                    inputMode="numeric"
+                  />
+                  {form.nin && !isValidNin(form.nin) && (
+                    <p style={styles.fieldError}>Must be exactly 11 digits, numbers only.</p>
+                  )}
+                  {form.nin && isValidNin(form.nin) && (
+                    <p style={styles.fieldValid}>✓ Valid format</p>
+                  )}
+                  <p style={styles.fieldHint}>
+                    Your NIN is used to prevent duplicate registrations. It is stored securely and not shared with employers.
+                  </p>
                 </div>
 
                 <div style={styles.field}>
@@ -605,15 +661,15 @@ const styles = {
   form: { backgroundColor: '#fff', borderRadius: '12px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
   sectionHeader: { fontSize: '16px', fontWeight: '700', color: '#1a6b3c', marginBottom: '16px', marginTop: '24px', paddingBottom: '8px', borderBottom: '2px solid #e8f5ee' },
   field: { marginBottom: '20px' },
-  fieldHint: { fontSize: '13px', color: '#888', marginBottom: '10px', marginTop: '-2px' },
+  fieldHint: { fontSize: '12px', color: '#888', marginTop: '5px', lineHeight: '1.5' },
+  fieldError: { fontSize: '12px', color: '#e53e3e', marginTop: '4px' },
+  fieldValid: { fontSize: '12px', color: '#1a6b3c', marginTop: '4px', fontWeight: '600' },
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },
   input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' },
+  inputError: { borderColor: '#e53e3e' },
+  inputValid: { borderColor: '#1a6b3c' },
   seekerTypeRow: { display: 'flex', gap: '12px', flexWrap: 'wrap' },
-  seekerTypeBtn: {
-    flex: '1', minWidth: '160px', padding: '16px', borderRadius: '10px',
-    border: '2px solid #ddd', backgroundColor: '#fafafa', cursor: 'pointer',
-    textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '4px',
-  },
+  seekerTypeBtn: { flex: '1', minWidth: '160px', padding: '16px', borderRadius: '10px', border: '2px solid #ddd', backgroundColor: '#fafafa', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '4px' },
   seekerTypeBtnActive: { borderColor: '#1a6b3c', backgroundColor: '#e8f5ee' },
   seekerTypeBtnLabel: { fontSize: '14px', fontWeight: '700', color: '#222' },
   seekerTypeBtnDesc: { fontSize: '12px', color: '#666', lineHeight: '1.4' },
