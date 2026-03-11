@@ -39,7 +39,7 @@ export default function AdminDashboard() {
   async function fetchJobListings() {
     const { data } = await supabase
       .from('job_listings')
-      .select('*, employers(organization_name, contact_person, phone_number, email)')
+      .select('*, employers(organization_name, contact_person, phone_number, email, cac_number, business_type, year_registered)')
       .order('created_at', { ascending: false })
     if (data) setJobListings(data)
   }
@@ -166,6 +166,9 @@ export default function AdminDashboard() {
               <p style={styles.cardDetail}><strong>Contact:</strong> {job.employers?.contact_person}</p>
               <p style={styles.cardDetail}><strong>Phone:</strong> {job.employers?.phone_number}</p>
               {job.employers?.email && <p style={styles.cardDetail}><strong>Email:</strong> {job.employers.email}</p>}
+              {job.employers?.business_type && <p style={styles.cardDetail}><strong>Business Type:</strong> {job.employers.business_type}</p>}
+              {job.employers?.cac_number && <p style={styles.cardDetail}><strong>CAC Number:</strong> {job.employers.cac_number}</p>}
+              {job.employers?.year_registered && <p style={styles.cardDetail}><strong>Year Registered:</strong> {job.employers.year_registered}</p>}
               <p style={styles.cardDescription}>{job.job_description}</p>
               <p style={styles.cardDate}>Submitted: {new Date(job.created_at).toLocaleDateString()}</p>
               {job.status === 'pending' && (
