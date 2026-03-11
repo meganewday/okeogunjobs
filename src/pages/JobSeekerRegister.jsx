@@ -64,7 +64,7 @@ const SEEKER_TYPES = [
 ]
 
 export default function JobSeekerRegister() {
-  const { user } = useAuth()
+  const { user, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [skills, setSkills] = useState([])
   const [seekerType, setSeekerType] = useState('')
@@ -222,6 +222,7 @@ export default function JobSeekerRegister() {
       if (insertError) throw insertError
 
       if (user) {
+        if (refreshProfile) await refreshProfile()
         navigate('/profile')
       } else {
         setSuccess(true)
