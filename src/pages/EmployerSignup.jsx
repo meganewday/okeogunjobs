@@ -24,8 +24,18 @@ const INDUSTRIES = [
   'Other',
 ]
 
+const BUSINESS_TYPES = [
+  'Sole Proprietorship',
+  'Partnership',
+  'Private Limited Company (Ltd)',
+  'Public Limited Company (PLC)',
+  'NGO / Non-Profit',
+  'Government Agency',
+  'Other',
+]
+
 export default function EmployerSignup() {
-  const [step, setStep] = useState(1) // 1 = account, 2 = company profile
+  const [step, setStep] = useState(1)
   const [account, setAccount] = useState({ email: '', password: '', confirmPassword: '' })
   const [profile, setProfile] = useState({
     organization_name: '',
@@ -39,6 +49,7 @@ export default function EmployerSignup() {
     year_registered: '',
   })
   const [submitting, setSubmitting] = useState(false)
+  const [checkingCac, setCheckingCac] = useState(false)
   const [sent, setSent] = useState(false)
   const [sentEmail, setSentEmail] = useState('')
   const [error, setError] = useState('')
@@ -80,9 +91,27 @@ export default function EmployerSignup() {
       return
     }
 
+    // CAC duplicate check — only if a CAC number was entered
+    const cacValue = profile.cac_number.trim()
+    if (cacValue) {
+      setCheckingCac(true)
+      const { data: existingCac } = await supabase
+        .from('employers')
+        .select('id')
+        .eq('cac_number', cacValue)
+        .maybeSingle()
+      setCheckingCac(false)
+
+      if (existingCac) {
+        setError(
+          'This CAC number is already registered on the platform. If this is your business and you have lost access to your account, contact us for help.'
+        )
+        return
+      }
+    }
+
     setSubmitting(true)
     try {
-      // 1. Create auth account
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: account.email.trim(),
         password: account.password,
@@ -98,11 +127,9 @@ export default function EmployerSignup() {
         return
       }
 
-      // 2. Create employer profile row immediately
       const userId = signUpData.user?.id
       if (userId) {
-        // Try inserting now — may fail silently if RLS blocks unauthenticated inserts
-        const { error: insertError } = await supabase.from('employers').insert({
+        const insertPayload = {
           auth_user_id: userId,
           organization_name: profile.organization_name.trim(),
           contact_person: profile.contact_person.trim(),
@@ -111,28 +138,18 @@ export default function EmployerSignup() {
           lga: profile.lga || null,
           industry: profile.industry || null,
           description: profile.description.trim() || null,
-          cac_number: profile.cac_number.trim() || null,
+          cac_number: cacValue || null,
           business_type: profile.business_type || null,
           year_registered: profile.year_registered.trim() || null,
           status: 'pending',
-        })
+        }
+
+        const { error: insertError } = await supabase.from('employers').insert(insertPayload)
 
         if (insertError) {
+          // RLS blocked — save to localStorage for recovery on first login
           try {
-            localStorage.setItem('okeogun_pending_employer', JSON.stringify({
-              auth_user_id: userId,
-              organization_name: profile.organization_name.trim(),
-              contact_person: profile.contact_person.trim(),
-              phone_number: profile.phone_number.trim(),
-              email: account.email.trim(),
-              lga: profile.lga || null,
-              industry: profile.industry || null,
-              description: profile.description.trim() || null,
-              cac_number: profile.cac_number.trim() || null,
-              business_type: profile.business_type || null,
-              year_registered: profile.year_registered.trim() || null,
-              status: 'pending',
-            }))
+            localStorage.setItem('okeogun_pending_employer', JSON.stringify(insertPayload))
           } catch (_) {}
         }
       }
@@ -245,6 +262,8 @@ export default function EmployerSignup() {
             </p>
 
             <form onSubmit={handleSubmit} style={styles.form}>
+
+              {/* Core details */}
               <div style={styles.field}>
                 <label style={styles.label}>Organisation / Business Name *</label>
                 <input
@@ -283,31 +302,17 @@ export default function EmployerSignup() {
 
               <div style={styles.field}>
                 <label style={styles.label}>LGA</label>
-                <select
-                  style={styles.input}
-                  name="lga"
-                  value={profile.lga}
-                  onChange={handleProfileChange}
-                >
+                <select style={styles.input} name="lga" value={profile.lga} onChange={handleProfileChange}>
                   <option value="">Select LGA</option>
-                  {LGAs.map(lga => (
-                    <option key={lga} value={lga}>{lga}</option>
-                  ))}
+                  {LGAs.map(lga => <option key={lga} value={lga}>{lga}</option>)}
                 </select>
               </div>
 
               <div style={styles.field}>
                 <label style={styles.label}>Industry / Sector</label>
-                <select
-                  style={styles.input}
-                  name="industry"
-                  value={profile.industry}
-                  onChange={handleProfileChange}
-                >
+                <select style={styles.input} name="industry" value={profile.industry} onChange={handleProfileChange}>
                   <option value="">Select industry</option>
-                  {INDUSTRIES.map(i => (
-                    <option key={i} value={i}>{i}</option>
-                  ))}
+                  {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                 </select>
               </div>
 
@@ -322,31 +327,13 @@ export default function EmployerSignup() {
                 />
               </div>
 
-              {/* CAC SECTION */}
+              {/* CAC section */}
               <div style={styles.cacSection}>
-                <p style={styles.cacTitle}>CAC Registration (optional)</p>
+                <p style={styles.cacHeading}>CAC Registration (optional)</p>
                 <p style={styles.cacHint}>
-                  Providing your CAC details helps us verify your business and builds
-                  trust with job seekers. You can skip this and add it later.
+                  If your business is registered with the Corporate Affairs Commission,
+                  enter the details below. Each CAC number can only be registered once.
                 </p>
-
-                <div style={styles.field}>
-                  <label style={styles.label}>Business Type</label>
-                  <select
-                    style={styles.input}
-                    name="business_type"
-                    value={profile.business_type}
-                    onChange={handleProfileChange}
-                  >
-                    <option value="">Select business type</option>
-                    <option value="Sole Proprietorship">Sole Proprietorship</option>
-                    <option value="Partnership">Partnership</option>
-                    <option value="Limited Liability Company">Limited Liability Company (Ltd)</option>
-                    <option value="NGO / Non-Profit">NGO / Non-Profit</option>
-                    <option value="Government Agency">Government Agency</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
 
                 <div style={styles.field}>
                   <label style={styles.label}>CAC Registration Number</label>
@@ -356,8 +343,16 @@ export default function EmployerSignup() {
                     name="cac_number"
                     value={profile.cac_number}
                     onChange={handleProfileChange}
-                    placeholder="e.g. RC-123456 or BN-123456"
+                    placeholder="e.g. RC1234567 or BN1234567"
                   />
+                </div>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>Business Type</label>
+                  <select style={styles.input} name="business_type" value={profile.business_type} onChange={handleProfileChange}>
+                    <option value="">Select business type</option>
+                    {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
 
                 <div style={styles.field}>
@@ -386,10 +381,10 @@ export default function EmployerSignup() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  style={{ ...styles.btn, flex: 1, ...(submitting ? styles.btnDisabled : {}) }}
+                  disabled={submitting || checkingCac}
+                  style={{ ...styles.btn, flex: 1, ...((submitting || checkingCac) ? styles.btnDisabled : {}) }}
                 >
-                  {submitting ? 'Creating account...' : 'Create Employer Account'}
+                  {checkingCac ? 'Checking...' : submitting ? 'Creating account...' : 'Create Employer Account'}
                 </button>
               </div>
             </form>
@@ -413,7 +408,7 @@ const styles = {
   page: { minHeight: '100vh', backgroundColor: '#f5f7f5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' },
   card: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px 32px', width: '100%', maxWidth: '480px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
   icon: { fontSize: '48px', marginBottom: '16px', textAlign: 'center' },
-  stepRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0', marginBottom: '28px' },
+  stepRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '28px' },
   stepDot: { width: '32px', height: '32px', borderRadius: '50%', border: '2px solid #ddd', backgroundColor: '#fff', color: '#aaa', fontSize: '13px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   stepDotActive: { borderColor: '#1a6b3c', backgroundColor: '#1a6b3c', color: '#fff' },
   stepLine: { width: '48px', height: '2px', backgroundColor: '#ddd' },
@@ -424,13 +419,13 @@ const styles = {
   field: { marginBottom: '18px' },
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },
   input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' },
+  cacSection: { backgroundColor: '#f9fafb', border: '1px solid #e8f5ee', borderRadius: '10px', padding: '18px', marginBottom: '18px' },
+  cacHeading: { fontSize: '14px', fontWeight: '700', color: '#1a6b3c', marginBottom: '6px' },
+  cacHint: { fontSize: '13px', color: '#666', lineHeight: '1.5', marginBottom: '14px' },
   error: { color: '#e53e3e', fontSize: '13px', marginBottom: '12px' },
   btn: { display: 'inline-block', padding: '13px 28px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '15px', fontWeight: '600', border: 'none', borderRadius: '8px', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box', textAlign: 'center' },
   btnDisabled: { backgroundColor: '#aaa', cursor: 'not-allowed' },
   backBtn: { padding: '13px 20px', backgroundColor: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '600' },
   footer: { fontSize: '13px', color: '#666', textAlign: 'center', marginTop: '16px' },
   link: { color: '#1a6b3c', fontWeight: '600', textDecoration: 'none' },
-  cacSection: { backgroundColor: '#f9fbf9', border: '1px solid #e0ede6', borderRadius: '10px', padding: '18px', marginBottom: '18px' },
-  cacTitle: { fontSize: '14px', fontWeight: '700', color: '#1a6b3c', margin: '0 0 6px 0' },
-  cacHint: { fontSize: '13px', color: '#888', lineHeight: '1.5', margin: '0 0 16px 0' },
 }
