@@ -3,9 +3,6 @@ import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { APP_NAME } from '../config/constants'
 import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
-import { useInactivityTimeout, clearActivityClock } from '../lib/useInactivityTimeout'
-
-const ADMIN_TIMEOUT = 60 * 60 * 1000 // 1 hour
 
 export default function AdminDashboard() {
   const [session, setSession] = useState(null)
@@ -14,6 +11,13 @@ export default function AdminDashboard() {
   const [jobSeekers, setJobSeekers] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+
+  const handleTimeout = useCallback(async () => {
+    await supabase.auth.signOut()
+    navigate('/admin/login?timeout=1')
+  }, [navigate])
+
+  useInactivityTimeout('admin', handleTimeout)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -66,37 +70,23 @@ export default function AdminDashboard() {
     if (!error) fetchJobSeekers()
   }
 
-  useInactivityTimeout(ADMIN_TIMEOUT, async () => {
-    clearActivityClock()
-    await supabase.auth.signOut()
-    navigate('/admin/login?reason=timeout')
-  })
-
   async function handleLogout() {
     clearActivity('admin')
     await supabase.auth.signOut()
     navigate('/admin/login')
   }
 
-  const handleTimeout = useCallback(async () => {
-    await supabase.auth.signOut()
-    navigate('/admin/login?timeout=1')
-  }, [navigate])
-
-  useInactivityTimeout('admin', handleTimeout)
-
   const pendingJobs = jobListings.filter(j => j.status === 'pending')
   const approvedJobs = jobListings.filter(j => j.status === 'approved')
-  const rejectedJobs = jobListings.filter(j => j.status === 'rejected')
   const pendingSeekers = jobSeekers.filter(s => s.status === 'pending')
   const approvedSeekers = jobSeekers.filter(s => s.status === 'approved')
 
   function statusBadge(status) {
     const colors = {
-      pending: { bg: '#fff8e1', color: '#f59e0b' },
+      pending:  { bg: '#fff8e1', color: '#f59e0b' },
       approved: { bg: '#e8f5ee', color: '#1a6b3c' },
       rejected: { bg: '#fef0ef', color: '#e53e3e' },
-      closed: { bg: '#f0f0f0', color: '#888' },
+      closed:   { bg: '#f0f0f0', color: '#888' },
     }
     const c = colors[status] || colors.pending
     return (
@@ -117,13 +107,11 @@ export default function AdminDashboard() {
   return (
     <div style={styles.page}>
 
-      {/* Header */}
       <div style={styles.header}>
         <h1 style={styles.headerTitle}>{APP_NAME} Admin</h1>
         <button onClick={handleLogout} style={styles.logoutBtn}>Sign Out</button>
       </div>
 
-      {/* Stats */}
       <div style={styles.statsRow}>
         <div style={styles.statCard}>
           <p style={styles.statNumber}>{pendingJobs.length}</p>
@@ -143,7 +131,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={styles.tabs}>
         <button
           onClick={() => setActiveTab('jobs')}
@@ -159,7 +146,6 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* Job Listings Tab */}
       {activeTab === 'jobs' && (
         <div style={styles.list}>
           {jobListings.length === 0 && <p style={styles.empty}>No job listings yet.</p>}
@@ -174,58 +160,29 @@ export default function AdminDashboard() {
                 </div>
                 {statusBadge(job.status)}
               </div>
-
               <p style={styles.cardDetail}><strong>Type:</strong> {job.job_type?.replace('_', ' ')}</p>
               <p style={styles.cardDetail}><strong>Location:</strong> {job.location || '—'}</p>
               <p style={styles.cardDetail}><strong>Application via:</strong> {job.application_method}</p>
               <p style={styles.cardDetail}><strong>Contact:</strong> {job.employers?.contact_person}</p>
               <p style={styles.cardDetail}><strong>Phone:</strong> {job.employers?.phone_number}</p>
-              {job.employers?.email && (
-                <p style={styles.cardDetail}><strong>Email:</strong> {job.employers.email}</p>
-              )}
+              {job.employers?.email && <p style={styles.cardDetail}><strong>Email:</strong> {job.employers.email}</p>}
               <p style={styles.cardDescription}>{job.job_description}</p>
               <p style={styles.cardDate}>Submitted: {new Date(job.created_at).toLocaleDateString()}</p>
-
               {job.status === 'pending' && (
                 <div style={styles.actionRow}>
-                  <button
-                    onClick={() => updateJobStatus(job.id, 'approved')}
-                    style={styles.approveBtn}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => updateJobStatus(job.id, 'rejected')}
-                    style={styles.rejectBtn}
-                  >
-                    Reject
-                  </button>
+                  <button onClick={() => updateJobStatus(job.id, 'approved')} style={styles.approveBtn}>Approve</button>
+                  <button onClick={() => updateJobStatus(job.id, 'rejected')} style={styles.rejectBtn}>Reject</button>
                 </div>
               )}
               {job.status === 'approved' && (
                 <div style={styles.actionRow}>
-                  <button
-                    onClick={() => updateJobStatus(job.id, 'closed')}
-                    style={styles.closeBtn}
-                  >
-                    Mark as Closed
-                  </button>
-                  <button
-                    onClick={() => updateJobStatus(job.id, 'rejected')}
-                    style={styles.rejectBtn}
-                  >
-                    Reject
-                  </button>
+                  <button onClick={() => updateJobStatus(job.id, 'closed')} style={styles.closeBtn}>Mark as Closed</button>
+                  <button onClick={() => updateJobStatus(job.id, 'rejected')} style={styles.rejectBtn}>Reject</button>
                 </div>
               )}
               {job.status === 'rejected' && (
                 <div style={styles.actionRow}>
-                  <button
-                    onClick={() => updateJobStatus(job.id, 'approved')}
-                    style={styles.approveBtn}
-                  >
-                    Re-approve
-                  </button>
+                  <button onClick={() => updateJobStatus(job.id, 'approved')} style={styles.approveBtn}>Re-approve</button>
                 </div>
               )}
             </div>
@@ -233,7 +190,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Job Seekers Tab */}
       {activeTab === 'seekers' && (
         <div style={styles.list}>
           {jobSeekers.length === 0 && <p style={styles.empty}>No job seekers yet.</p>}
@@ -255,76 +211,41 @@ export default function AdminDashboard() {
                 </div>
                 {statusBadge(seeker.status)}
               </div>
-
               <p style={styles.cardDetail}><strong>Phone:</strong> {seeker.phone_number}</p>
-              {seeker.whatsapp_number && (
-                <p style={styles.cardDetail}><strong>WhatsApp:</strong> {seeker.whatsapp_number}</p>
-              )}
-              {seeker.gender && (
-                <p style={styles.cardDetail}><strong>Gender:</strong> {seeker.gender}</p>
-              )}
-              {seeker.age_range && (
-                <p style={styles.cardDetail}><strong>Age Range:</strong> {seeker.age_range}</p>
-              )}
-              {seeker.education_level && (
-                <p style={styles.cardDetail}><strong>Education:</strong> {seeker.education_level.replace(/_/g, ' ')}</p>
-              )}
-              {seeker.years_of_experience > 0 && (
-                <p style={styles.cardDetail}><strong>Experience:</strong> {seeker.years_of_experience} year(s)</p>
-              )}
-              {seeker.location && (
-                <p style={styles.cardDetail}><strong>Location:</strong> {seeker.location}{seeker.ward ? `, ${seeker.ward}` : ''}</p>
-              )}
+              {seeker.whatsapp_number && <p style={styles.cardDetail}><strong>WhatsApp:</strong> {seeker.whatsapp_number}</p>}
+              {seeker.gender && <p style={styles.cardDetail}><strong>Gender:</strong> {seeker.gender}</p>}
+              {seeker.age_range && <p style={styles.cardDetail}><strong>Age Range:</strong> {seeker.age_range}</p>}
+              {seeker.education_level && <p style={styles.cardDetail}><strong>Education:</strong> {seeker.education_level.replace(/_/g, ' ')}</p>}
+              {seeker.years_of_experience > 0 && <p style={styles.cardDetail}><strong>Experience:</strong> {seeker.years_of_experience} year(s)</p>}
+              {seeker.location && <p style={styles.cardDetail}><strong>Location:</strong> {seeker.location}{seeker.ward ? `, ${seeker.ward}` : ''}</p>}
               {seeker.cv_url && (
                 <p style={styles.cardDetail}>
                   <strong>CV: </strong>
-                  <a href={seeker.cv_url} target="_blank" rel="noreferrer" style={styles.link}>
-                    View CV
-                  </a>
+                  <a href={seeker.cv_url} target="_blank" rel="noreferrer" style={styles.link}>View CV</a>
                 </p>
               )}
               <p style={styles.cardDate}>Submitted: {new Date(seeker.created_at).toLocaleDateString()}</p>
-
               {seeker.status === 'pending' && (
                 <div style={styles.actionRow}>
-                  <button
-                    onClick={() => updateSeekerStatus(seeker.id, 'approved')}
-                    style={styles.approveBtn}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => updateSeekerStatus(seeker.id, 'rejected')}
-                    style={styles.rejectBtn}
-                  >
-                    Reject
-                  </button>
+                  <button onClick={() => updateSeekerStatus(seeker.id, 'approved')} style={styles.approveBtn}>Approve</button>
+                  <button onClick={() => updateSeekerStatus(seeker.id, 'rejected')} style={styles.rejectBtn}>Reject</button>
                 </div>
               )}
               {seeker.status === 'approved' && (
                 <div style={styles.actionRow}>
-                  <button
-                    onClick={() => updateSeekerStatus(seeker.id, 'rejected')}
-                    style={styles.rejectBtn}
-                  >
-                    Reject
-                  </button>
+                  <button onClick={() => updateSeekerStatus(seeker.id, 'rejected')} style={styles.rejectBtn}>Reject</button>
                 </div>
               )}
               {seeker.status === 'rejected' && (
                 <div style={styles.actionRow}>
-                  <button
-                    onClick={() => updateSeekerStatus(seeker.id, 'approved')}
-                    style={styles.approveBtn}
-                  >
-                    Re-approve
-                  </button>
+                  <button onClick={() => updateSeekerStatus(seeker.id, 'approved')} style={styles.approveBtn}>Re-approve</button>
                 </div>
               )}
             </div>
           ))}
         </div>
       )}
+
     </div>
   )
 }
