@@ -34,6 +34,9 @@ export default function EmployerSignup() {
     lga: '',
     industry: '',
     description: '',
+    cac_number: '',
+    business_type: '',
+    year_registered: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
@@ -108,11 +111,13 @@ export default function EmployerSignup() {
           lga: profile.lga || null,
           industry: profile.industry || null,
           description: profile.description.trim() || null,
+          cac_number: profile.cac_number.trim() || null,
+          business_type: profile.business_type || null,
+          year_registered: profile.year_registered.trim() || null,
           status: 'pending',
         })
 
         if (insertError) {
-          // RLS blocked it — save to localStorage so EmployerAuthContext can retry after login
           try {
             localStorage.setItem('okeogun_pending_employer', JSON.stringify({
               auth_user_id: userId,
@@ -123,6 +128,9 @@ export default function EmployerSignup() {
               lga: profile.lga || null,
               industry: profile.industry || null,
               description: profile.description.trim() || null,
+              cac_number: profile.cac_number.trim() || null,
+              business_type: profile.business_type || null,
+              year_registered: profile.year_registered.trim() || null,
               status: 'pending',
             }))
           } catch (_) {}
@@ -314,6 +322,58 @@ export default function EmployerSignup() {
                 />
               </div>
 
+              {/* CAC SECTION */}
+              <div style={styles.cacSection}>
+                <p style={styles.cacTitle}>CAC Registration (optional)</p>
+                <p style={styles.cacHint}>
+                  Providing your CAC details helps us verify your business and builds
+                  trust with job seekers. You can skip this and add it later.
+                </p>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>Business Type</label>
+                  <select
+                    style={styles.input}
+                    name="business_type"
+                    value={profile.business_type}
+                    onChange={handleProfileChange}
+                  >
+                    <option value="">Select business type</option>
+                    <option value="Sole Proprietorship">Sole Proprietorship</option>
+                    <option value="Partnership">Partnership</option>
+                    <option value="Limited Liability Company">Limited Liability Company (Ltd)</option>
+                    <option value="NGO / Non-Profit">NGO / Non-Profit</option>
+                    <option value="Government Agency">Government Agency</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>CAC Registration Number</label>
+                  <input
+                    style={styles.input}
+                    type="text"
+                    name="cac_number"
+                    value={profile.cac_number}
+                    onChange={handleProfileChange}
+                    placeholder="e.g. RC-123456 or BN-123456"
+                  />
+                </div>
+
+                <div style={styles.field}>
+                  <label style={styles.label}>Year Registered</label>
+                  <input
+                    style={styles.input}
+                    type="text"
+                    name="year_registered"
+                    value={profile.year_registered}
+                    onChange={handleProfileChange}
+                    placeholder="e.g. 2018"
+                    maxLength={4}
+                  />
+                </div>
+              </div>
+
               {error && <p style={styles.error}>{error}</p>}
 
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -370,4 +430,7 @@ const styles = {
   backBtn: { padding: '13px 20px', backgroundColor: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: '600' },
   footer: { fontSize: '13px', color: '#666', textAlign: 'center', marginTop: '16px' },
   link: { color: '#1a6b3c', fontWeight: '600', textDecoration: 'none' },
+  cacSection: { backgroundColor: '#f9fbf9', border: '1px solid #e0ede6', borderRadius: '10px', padding: '18px', marginBottom: '18px' },
+  cacTitle: { fontSize: '14px', fontWeight: '700', color: '#1a6b3c', margin: '0 0 6px 0' },
+  cacHint: { fontSize: '13px', color: '#888', lineHeight: '1.5', margin: '0 0 16px 0' },
 }
