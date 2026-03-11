@@ -4,9 +4,6 @@ import { supabase } from '../lib/supabase'
 import { useEmployerAuth } from '../contexts/EmployerAuthContext'
 import { APP_NAME } from '../config/constants'
 import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
-import { useInactivityTimeout, clearActivityClock } from '../lib/useInactivityTimeout'
-
-const EMPLOYER_TIMEOUT = 8 * 60 * 60 * 1000 // 8 hours
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -43,15 +40,15 @@ export default function EmployerDashboard() {
   const [activeTab, setActiveTab] = useState('listings')
   const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, closed: 0 })
 
-  // Logo upload
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoError, setLogoError] = useState('')
 
-  useInactivityTimeout(EMPLOYER_TIMEOUT, async () => {
-    clearActivityClock()
+  const handleTimeout = useCallback(async () => {
     await employerSignOut()
-    navigate('/employer/login?reason=timeout')
-  })
+    navigate('/employer/login?timeout=1')
+  }, [employerSignOut, navigate])
+
+  useInactivityTimeout('employer', handleTimeout)
 
   useEffect(() => {
     if (!employerLoading && !employer) {
@@ -95,13 +92,6 @@ export default function EmployerDashboard() {
     await employerSignOut()
     navigate('/')
   }
-
-  const handleTimeout = useCallback(async () => {
-    await employerSignOut()
-    navigate('/employer/login?timeout=1')
-  }, [employerSignOut, navigate])
-
-  useInactivityTimeout('employer', handleTimeout)
 
   async function handleCloseJob(jobId) {
     const { error } = await supabase
@@ -158,10 +148,10 @@ export default function EmployerDashboard() {
         <div style={styles.emptyCard}>
           <h2 style={styles.emptyTitle}>Profile not found</h2>
           <p style={styles.emptyText}>
-            Your account exists but you have not posted a job yet. Post your
-            first job to set up your employer profile.
+            Your account exists but your employer profile could not be loaded.
+            Please try logging out and back in.
           </p>
-          <Link to="/post-job" style={styles.btn}>Post a Job</Link>
+          <button onClick={handleSignOut} style={styles.btn}>Sign Out</button>
         </div>
       </div>
     )
@@ -179,11 +169,7 @@ export default function EmployerDashboard() {
           </div>
           <div style={styles.headerActions}>
             <Link to="/post-job" style={styles.postJobBtn}>+ Post a Job</Link>
-            <button
-              onClick={handleSignOut}
-              disabled={signingOut}
-              style={styles.signOutBtn}
-            >
+            <button onClick={handleSignOut} disabled={signingOut} style={styles.signOutBtn}>
               {signingOut ? 'Signing out...' : 'Sign Out'}
             </button>
           </div>
@@ -263,21 +249,14 @@ export default function EmployerDashboard() {
                         </div>
                       </div>
 
-                      {/* Actions */}
                       <div style={styles.listingActions}>
                         {appCount > 0 && (
-                          <Link
-                            to={`/employer/applications/${job.id}`}
-                            style={styles.viewAppsBtn}
-                          >
+                          <Link to={`/employer/applications/${job.id}`} style={styles.viewAppsBtn}>
                             View Applications
                           </Link>
                         )}
                         {job.status === 'approved' && (
-                          <button
-                            onClick={() => handleCloseJob(job.id)}
-                            style={styles.closeJobBtn}
-                          >
+                          <button onClick={() => handleCloseJob(job.id)} style={styles.closeJobBtn}>
                             Close Listing
                           </button>
                         )}
@@ -293,7 +272,6 @@ export default function EmployerDashboard() {
         {/* EMPLOYER DETAILS TAB */}
         {activeTab === 'profile' && (
           <div style={styles.detailCard}>
-            {/* Logo */}
             <div style={styles.logoRow}>
               <div style={styles.logoWrap}>
                 {employerProfile.logo_url ? (
@@ -326,6 +304,9 @@ export default function EmployerDashboard() {
               <DetailRow label="Contact Person" value={employerProfile.contact_person} />
               <DetailRow label="Phone" value={employerProfile.phone_number} />
               {employerProfile.email && <DetailRow label="Email" value={employerProfile.email} />}
+              {employerProfile.lga && <DetailRow label="LGA" value={employerProfile.lga} />}
+              {employerProfile.industry && <DetailRow label="Industry" value={employerProfile.industry} />}
+              {employerProfile.description && <DetailRow label="About" value={employerProfile.description} />}
               <DetailRow
                 label="Account Status"
                 value={employerProfile.status === 'approved' ? 'Active' : 'Pending Review'}
@@ -362,27 +343,19 @@ const styles = {
   page: { minHeight: '100vh', backgroundColor: '#f5f7f5', padding: '40px 24px' },
   centred: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f7f5', padding: '24px' },
   loadingText: { color: '#888', fontSize: '15px' },
-
-  // Header
   pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' },
   pageTitle: { fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 'bold', color: '#1a6b3c', margin: 0 },
   pageSubtitle: { fontSize: '13px', color: '#888', marginTop: '2px' },
   headerActions: { display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' },
   postJobBtn: { padding: '9px 20px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', fontWeight: '700', fontSize: '14px', textDecoration: 'none' },
   signOutBtn: { padding: '8px 16px', backgroundColor: 'transparent', color: '#e53e3e', border: '1px solid #e53e3e', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' },
-
-  // Stats
   statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '20px' },
   statCard: { backgroundColor: '#fff', borderRadius: '10px', padding: '16px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   statValue: { fontSize: '28px', fontWeight: 'bold', color: '#1a6b3c' },
   statLabel: { fontSize: '12px', color: '#888', marginTop: '4px', textAlign: 'center' },
-
-  // Tabs
   tabs: { display: 'flex', gap: '4px', marginBottom: '16px', backgroundColor: '#fff', borderRadius: '10px', padding: '4px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', width: 'fit-content' },
   tab: { padding: '8px 20px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#888' },
   tabActive: { backgroundColor: '#1a6b3c', color: '#fff' },
-
-  // Listings
   listingsList: { display: 'flex', flexDirection: 'column', gap: '12px' },
   listingCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   listingCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' },
@@ -396,8 +369,6 @@ const styles = {
   listingActions: { display: 'flex', gap: '10px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #f0f0f0' },
   viewAppsBtn: { padding: '7px 16px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' },
   closeJobBtn: { padding: '7px 16px', backgroundColor: 'transparent', color: '#888', border: '1px solid #ddd', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
-
-  // Detail card
   detailCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '28px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', maxWidth: '520px' },
   detailCardTitle: { fontSize: '15px', fontWeight: '700', color: '#1a6b3c', marginBottom: '20px', paddingBottom: '8px', borderBottom: '2px solid #e8f5ee' },
   detailGrid: {},
@@ -409,10 +380,8 @@ const styles = {
   logoEditBtn: { position: 'absolute', bottom: '-4px', right: '-4px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#fff', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' },
   logoHint: { fontSize: '13px', color: '#888', margin: 0 },
   logoError: { fontSize: '12px', color: '#e53e3e', marginTop: '4px' },
-
-  // Empty + buttons
   emptyCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   emptyTitle: { fontSize: '18px', fontWeight: '700', color: '#222', marginBottom: '8px' },
   emptyText: { fontSize: '14px', color: '#888', marginBottom: '20px' },
-  btn: { display: 'inline-block', padding: '12px 28px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', fontSize: '14px' },
+  btn: { display: 'inline-block', padding: '12px 28px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', fontSize: '14px', border: 'none', cursor: 'pointer' },
 }
