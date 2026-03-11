@@ -23,6 +23,7 @@ import EmployerUpdatePassword from './pages/EmployerUpdatePassword'
 import EmployerDashboard from './pages/EmployerDashboard'
 import EmployerApplications from './pages/EmployerApplications'
 import PrivacyPolicy from './pages/PrivacyPolicy'
+import FAQ from './pages/FAQ'
 
 function Layout({ children }) {
   const location = useLocation()
@@ -48,6 +49,7 @@ function App() {
               <Route path="/register" element={<JobSeekerRegister />} />
               <Route path="/post-job" element={<PostJob />} />
               <Route path="/jobs" element={<JobListings />} />
+              <Route path="/faq" element={<FAQ />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/signup" element={<JobSeekerSignup />} />
@@ -64,8 +66,6 @@ function App() {
               <Route path="/employer/dashboard" element={<EmployerDashboard />} />
               <Route path="/employer/applications/:jobId" element={<EmployerApplications />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
-              
-           
             </Routes>
           </Layout>
         </BrowserRouter>
