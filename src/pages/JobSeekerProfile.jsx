@@ -4,9 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { APP_NAME } from '../config/constants'
 import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
-import { useInactivityTimeout, clearActivityClock } from '../lib/useInactivityTimeout'
 
-const SEEKER_TIMEOUT = 24 * 60 * 60 * 1000 // 24 hours
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -102,11 +100,7 @@ export default function JobSeekerProfile() {
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoError, setPhotoError] = useState('')
 
-  useInactivityTimeout(SEEKER_TIMEOUT, async () => {
-    clearActivityClock()
     await signOut()
-    navigate('/login?reason=timeout')
-  })
 
   useEffect(() => {
     if (!loading && !user) navigate('/login')
