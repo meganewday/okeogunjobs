@@ -100,8 +100,6 @@ export default function JobSeekerProfile() {
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoError, setPhotoError] = useState('')
 
-    await signOut()
-
   useEffect(() => {
     if (!loading && !user) navigate('/login')
   }, [user, loading, navigate])
