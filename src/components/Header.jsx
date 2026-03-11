@@ -25,6 +25,7 @@ export default function Header() {
   const baseLinks = [
     { to: '/', label: 'Home' },
     { to: '/jobs', label: 'Browse Jobs' },
+    { to: '/faq', label: 'FAQ' },
   ]
 
   async function handleSignOut() {
