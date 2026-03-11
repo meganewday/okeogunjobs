@@ -161,7 +161,6 @@ export default function EmployerDashboard() {
     <div style={styles.page}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
-        {/* PAGE HEADER */}
         <div style={styles.pageHeader}>
           <div>
             <h1 style={styles.pageTitle}>Employer Dashboard</h1>
@@ -175,7 +174,6 @@ export default function EmployerDashboard() {
           </div>
         </div>
 
-        {/* STATS ROW */}
         <div style={styles.statsRow}>
           {[
             { label: 'Total Listings', value: stats.total },
@@ -190,7 +188,6 @@ export default function EmployerDashboard() {
           ))}
         </div>
 
-        {/* TABS */}
         <div style={styles.tabs}>
           <button
             style={{ ...styles.tab, ...(activeTab === 'listings' ? styles.tabActive : {}) }}
@@ -206,7 +203,6 @@ export default function EmployerDashboard() {
           </button>
         </div>
 
-        {/* LISTINGS TAB */}
         {activeTab === 'listings' && (
           <div>
             {listingsLoading ? (
@@ -237,10 +233,7 @@ export default function EmployerDashboard() {
                           </p>
                         </div>
                         <div style={styles.listingCardRight}>
-                          <span style={{
-                            ...styles.statusPill,
-                            ...(STATUS_STYLES[job.status] || STATUS_STYLES.pending)
-                          }}>
+                          <span style={{ ...styles.statusPill, ...(STATUS_STYLES[job.status] || STATUS_STYLES.pending) }}>
                             {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                           </span>
                           <span style={styles.appCountPill}>
@@ -248,7 +241,6 @@ export default function EmployerDashboard() {
                           </span>
                         </div>
                       </div>
-
                       <div style={styles.listingActions}>
                         {appCount > 0 && (
                           <Link to={`/employer/applications/${job.id}`} style={styles.viewAppsBtn}>
@@ -269,7 +261,6 @@ export default function EmployerDashboard() {
           </div>
         )}
 
-        {/* EMPLOYER DETAILS TAB */}
         {activeTab === 'profile' && (
           <div style={styles.detailCard}>
             <div style={styles.logoRow}>
@@ -307,6 +298,9 @@ export default function EmployerDashboard() {
               {employerProfile.lga && <DetailRow label="LGA" value={employerProfile.lga} />}
               {employerProfile.industry && <DetailRow label="Industry" value={employerProfile.industry} />}
               {employerProfile.description && <DetailRow label="About" value={employerProfile.description} />}
+              {employerProfile.business_type && <DetailRow label="Business Type" value={employerProfile.business_type} />}
+              {employerProfile.cac_number && <DetailRow label="CAC Number" value={employerProfile.cac_number} />}
+              {employerProfile.year_registered && <DetailRow label="Year Registered" value={employerProfile.year_registered} />}
               <DetailRow
                 label="Account Status"
                 value={employerProfile.status === 'approved' ? 'Active' : 'Pending Review'}
