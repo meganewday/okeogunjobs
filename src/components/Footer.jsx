@@ -17,6 +17,7 @@ export default function Footer() {
               <Link to="/" style={styles.link}>Home</Link>
               <Link to="/jobs" style={styles.link}>Browse Jobs</Link>
               <Link to="/register" style={styles.link}>Register as Job Seeker</Link>
+              <Link to="/faq" style={styles.link}>FAQ</Link>
               <Link to="/privacy" style={styles.link}>Privacy Policy</Link>
             </div>
           </div>
@@ -24,7 +25,9 @@ export default function Footer() {
             <p style={styles.heading}>For Employers</p>
             <div style={styles.linkCol}>
               <Link to="/post-job" style={styles.link}>Post a Job</Link>
-              <p style={styles.infoText}>All listings are reviewed before publishing to ensure quality and authenticity.</p>
+              <Link to="/employer/signup" style={styles.link}>Create Employer Account</Link>
+              <Link to="/employer/login" style={styles.link}>Employer Login</Link>
+              <Link to="/faq" style={styles.link}>Employer FAQ</Link>
             </div>
           </div>
           <div>
