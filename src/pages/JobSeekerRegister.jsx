@@ -216,6 +216,20 @@ export default function JobSeekerRegister() {
         payload.lga = form.preferred_lga || form.lga || null
       }
 
+      // If logged in, check for existing profile first to avoid duplicates
+      if (user) {
+        const { data: existing } = await supabase
+          .from('job_seekers')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single()
+        if (existing) {
+          if (refreshProfile) await refreshProfile()
+          navigate('/profile')
+          return
+        }
+      }
+
       const { error: insertError } = await supabase
         .from('job_seekers')
         .insert(payload)
