@@ -50,12 +50,12 @@ export default function Footer() {
           <p style={styles.copy}>
             Designed by{' '}
             <a
-              href="https://wa.me/2348131626807?text=Hello%2C%20I%20came%20across%20your%20work%20on%20OkeOgunJobs%20and%20I%27m%20impressed.%20I%27d%20love%20to%20have%20you%20build%20something%20like%20this%20for%20me.%20Please%20let%27s%20talk."
+              href="https://vibestudio.ng"
               target="_blank"
-              rel="noreferrer"
+              rel="noreferrer nofollow"
               style={{ color: '#aaa', textDecoration: 'underline' }}
             >
-              Megafx Designs
+              Vibe Studio NG
             </a>
           </p>
         </div>
