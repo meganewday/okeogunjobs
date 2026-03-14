@@ -48,7 +48,7 @@ export default function Footer() {
             {String.fromCharCode(169)} {new Date().getFullYear()} {APP_NAME}. Built for the Oke-Ogun community.
           </p>
           <p style={styles.copy}>
-            Designed by{' '}
+            Built by{' '}
             <a
               href="https://vibestudio.ng"
               target="_blank"
