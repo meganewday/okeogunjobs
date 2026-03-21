@@ -77,6 +77,12 @@ const STATUS_STYLES = {
   withdrawn:   { backgroundColor: '#f3f4f6', color: '#6b7280' },
 }
 
+const NOTIF_STYLES = {
+  application_shortlisted: { backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd', icon: '📋' },
+  application_accepted:    { backgroundColor: '#e8f5ee', color: '#1a6b3c', borderColor: '#a7f3d0', icon: '✅' },
+  application_rejected:    { backgroundColor: '#fff8e1', color: '#b45309', borderColor: '#fde68a', icon: 'ℹ️' },
+}
+
 export default function JobSeekerProfile() {
   const { user, profile, loading, signOut, refreshProfile } = useAuth()
   const navigate = useNavigate()
@@ -88,6 +94,10 @@ export default function JobSeekerProfile() {
   const [appsLoading, setAppsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
   const [signingOut, setSigningOut] = useState(false)
+
+  // Notifications
+  const [notifications, setNotifications] = useState([])
+  const [notifsRead, setNotifsRead] = useState(false)
 
   // Edit mode
   const [editing, setEditing] = useState(false)
@@ -109,6 +119,7 @@ export default function JobSeekerProfile() {
       fetchProfileSkills()
       fetchApplications()
       fetchAllSkills()
+      fetchNotifications()
       setEditForm({
         full_name: profile.full_name || '',
         phone_number: profile.phone_number || '',
@@ -130,6 +141,28 @@ export default function JobSeekerProfile() {
       })
     }
   }, [profile])
+
+  async function fetchNotifications() {
+    if (!profile?.id) return
+    const { data } = await supabase
+      .from('notifications')
+      .select('id, message_type, message, sent_at, read_at')
+      .eq('seeker_id', profile.id)
+      .is('read_at', null)
+      .order('sent_at', { ascending: false })
+    if (data) setNotifications(data)
+  }
+
+  async function markNotificationsRead() {
+    if (notifsRead || notifications.length === 0) return
+    setNotifsRead(true)
+    const ids = notifications.map(n => n.id)
+    await supabase
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .in('id', ids)
+    // Keep showing them in UI until next page load — just mark as read in DB
+  }
 
   async function fetchAllSkills() {
     const { data } = await supabase.from('skills').select('*').order('category')
@@ -303,6 +336,8 @@ export default function JobSeekerProfile() {
   const skilledCategories = Object.entries(grouped).filter(([cat]) => cat !== 'General Labour')
   const unskilledCategories = Object.entries(grouped).filter(([cat]) => cat === 'General Labour')
 
+  const unreadCount = notifications.length
+
   return (
     <div style={styles.page}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -375,9 +410,18 @@ export default function JobSeekerProfile() {
           </button>
           <button
             style={{ ...styles.tab, ...(activeTab === 'applications' ? styles.tabActive : {}) }}
-            onClick={() => { setActiveTab('applications'); setEditing(false) }}
+            onClick={() => {
+              setActiveTab('applications')
+              setEditing(false)
+              // Mark notifications as read when seeker opens Applications tab
+              markNotificationsRead()
+            }}
           >
-            Applications {applications.length > 0 && `(${applications.length})`}
+            Applications
+            {applications.length > 0 && ` (${applications.length})`}
+            {unreadCount > 0 && (
+              <span style={styles.notifBadge}>{unreadCount}</span>
+            )}
           </button>
         </div>
 
@@ -620,6 +664,38 @@ export default function JobSeekerProfile() {
         {/* APPLICATIONS TAB */}
         {activeTab === 'applications' && (
           <div style={styles.tabContent}>
+
+            {/* NOTIFICATIONS */}
+            {notifications.length > 0 && (
+              <div style={styles.notifsSection}>
+                <h3 style={styles.notifsTitle}>Updates on your applications</h3>
+                {notifications.map(notif => {
+                  const style = NOTIF_STYLES[notif.message_type] || NOTIF_STYLES.application_shortlisted
+                  return (
+                    <div
+                      key={notif.id}
+                      style={{
+                        ...styles.notifCard,
+                        backgroundColor: style.backgroundColor,
+                        borderColor: style.borderColor,
+                        color: style.color,
+                      }}
+                    >
+                      <span style={styles.notifIcon}>{style.icon}</span>
+                      <div style={styles.notifBody}>
+                        <p style={styles.notifMessage}>{notif.message}</p>
+                        <p style={styles.notifDate}>
+                          {new Date(notif.sent_at).toLocaleDateString('en-GB', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
             {appsLoading ? (
               <p style={styles.loadingText}>Loading applications...</p>
             ) : applications.length === 0 ? (
@@ -693,10 +769,21 @@ const styles = {
   seekerTypePill: { fontSize: '12px', padding: '4px 12px', borderRadius: '12px', fontWeight: '600' },
   statusPill: { fontSize: '12px', padding: '4px 12px', borderRadius: '12px', fontWeight: '600' },
   tabs: { display: 'flex', gap: '4px', marginBottom: '16px', backgroundColor: '#fff', borderRadius: '10px', padding: '4px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', width: 'fit-content' },
-  tab: { padding: '8px 20px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#888' },
+  tab: { padding: '8px 20px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#888', position: 'relative', display: 'flex', alignItems: 'center', gap: '6px' },
   tabActive: { backgroundColor: '#1a6b3c', color: '#fff' },
+  notifBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e53e3e', color: '#fff', fontSize: '11px', fontWeight: '700', borderRadius: '10px', minWidth: '18px', height: '18px', padding: '0 5px' },
   tabContent: {},
   successBanner: { backgroundColor: '#e8f5ee', color: '#1a6b3c', fontSize: '13px', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
+
+  // Notifications
+  notifsSection: { marginBottom: '20px' },
+  notifsTitle: { fontSize: '14px', fontWeight: '700', color: '#333', marginBottom: '10px' },
+  notifCard: { display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px 16px', borderRadius: '10px', border: '1px solid', marginBottom: '8px' },
+  notifIcon: { fontSize: '18px', flexShrink: 0, marginTop: '1px' },
+  notifBody: { flex: 1 },
+  notifMessage: { fontSize: '13px', fontWeight: '600', margin: '0 0 4px 0', lineHeight: '1.4' },
+  notifDate: { fontSize: '11px', opacity: 0.7, margin: 0 },
+
   detailCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   detailCardTitle: { fontSize: '15px', fontWeight: '700', color: '#1a6b3c', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #e8f5ee' },
   skillTags: { display: 'flex', flexWrap: 'wrap', gap: '8px' },

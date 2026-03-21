@@ -37,14 +37,6 @@ const STATUS_STYLES = {
   withdrawn:   { backgroundColor: '#f3f4f6', color: '#6b7280' },
 }
 
-const STATUS_ACTIONS = {
-  submitted:   ['shortlisted', 'accepted', 'rejected'],
-  shortlisted: ['accepted', 'rejected'],
-  accepted:    [],
-  rejected:    [],
-  withdrawn:   [],
-}
-
 const ACTION_LABELS = {
   shortlisted: 'Shortlist',
   accepted:    'Accept',
@@ -55,6 +47,15 @@ const ACTION_STYLES = {
   shortlisted: { backgroundColor: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd' },
   accepted:    { backgroundColor: '#e8f5ee', color: '#1a6b3c', border: '1px solid #a7f3d0' },
   rejected:    { backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca' },
+}
+
+const NOTIFICATION_MESSAGES = {
+  shortlisted: (jobTitle, orgName) =>
+    `Good news! Your application for "${jobTitle}" at ${orgName} has been shortlisted. The employer may contact you soon for the next step.`,
+  accepted: (jobTitle, orgName) =>
+    `Congratulations! Your application for "${jobTitle}" at ${orgName} has been accepted. Expect a call or message from the employer.`,
+  rejected: (jobTitle, orgName) =>
+    `Your application for "${jobTitle}" at ${orgName} was not successful this time. Keep applying — new jobs are added regularly.`,
 }
 
 export default function EmployerApplications() {
@@ -70,6 +71,7 @@ export default function EmployerApplications() {
   const [updating, setUpdating] = useState(null)
   const [filterStatus, setFilterStatus] = useState('all')
   const [expandedId, setExpandedId] = useState(null)
+  const [updateError, setUpdateError] = useState(null)
 
   useEffect(() => {
     if (!employerLoading && !employer) {
@@ -86,7 +88,6 @@ export default function EmployerApplications() {
   async function fetchJobAndApplications() {
     setLoading(true)
 
-    // Fetch job — verify it belongs to this employer
     const { data: jobData } = await supabase
       .from('job_listings')
       .select('id, job_title, job_type, labour_type, location, lga, status')
@@ -100,13 +101,12 @@ export default function EmployerApplications() {
     }
     setJob(jobData)
 
-    // Fetch applications with seeker details
     const { data: appsData } = await supabase
       .from('applications')
       .select(`
         id, status, applied_at, cover_note,
         job_seekers (
-          id, full_name, phone_number, whatsapp_number,
+          id, full_name, phone_number, whatsapp_number, email,
           lga, location, seeker_type, education_level,
           years_of_experience, previous_workplace,
           institution, course_of_study, academic_level,
@@ -119,7 +119,6 @@ export default function EmployerApplications() {
     if (appsData) {
       setApplications(appsData)
 
-      // Collect all skill IDs across all applicants
       const allSkillIds = appsData
         .flatMap(app => app.job_seekers?.skills || [])
         .filter(Boolean)
@@ -140,28 +139,91 @@ export default function EmployerApplications() {
     setLoading(false)
   }
 
-  async function updateStatus(applicationId, newStatus) {
+  async function updateStatus(applicationId, newStatus, seekerId, seekerEmail, seekerName) {
     setUpdating(applicationId)
+    setUpdateError(null)
+
     const { error } = await supabase
       .from('applications')
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', applicationId)
-    if (!error) {
-      setApplications(prev =>
-        prev.map(app =>
-          app.id === applicationId ? { ...app, status: newStatus } : app
-        )
-      )
+
+    if (error) {
+      console.error('Status update error:', error)
+      setUpdateError('Could not update status. Please try again.')
+      setUpdating(null)
+      return
     }
+
+    // Update local state immediately
+    setApplications(prev =>
+      prev.map(app =>
+        app.id === applicationId ? { ...app, status: newStatus } : app
+      )
+    )
+
+    // Write in-app notification to notifications table
+    const message = NOTIFICATION_MESSAGES[newStatus]?.(
+      job.job_title,
+      employerProfile.organization_name
+    )
+
+    if (message && seekerId) {
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          seeker_id: seekerId,
+          recipient_type: 'job_seeker',
+          message_type: `application_${newStatus}`,
+          reference_id: applicationId,
+          sent_at: new Date().toISOString(),
+          delivery_status: 'delivered',
+          message,
+        })
+
+      if (notifError) {
+        console.error('Notification insert error:', notifError)
+      }
+    }
+
+    // Send email notification — non-blocking, does not affect UI if it fails
+    if (seekerEmail) {
+      try {
+        await supabase.functions.invoke('notify-application-status', {
+          body: {
+            seekerEmail,
+            seekerName: seekerName || 'Applicant',
+            jobTitle: job.job_title,
+            orgName: employerProfile.organization_name,
+            newStatus,
+          },
+        })
+      } catch (emailErr) {
+        // Log only — email failure must never block the status update
+        console.error('Email notification error:', emailErr)
+      }
+    }
+
     setUpdating(null)
   }
 
-  function getWhatsAppLink(phone) {
+  function getWhatsAppLink(phone, seekerName, newStatus) {
     if (!phone) return null
     const cleaned = phone.replace(/\D/g, '')
-    const formatted = cleaned.startsWith('0')
-      ? '234' + cleaned.slice(1)
-      : cleaned
+    const formatted = cleaned.startsWith('0') ? '234' + cleaned.slice(1) : cleaned
+    const messages = {
+      shortlisted: `Hello ${seekerName}, your application for the "${job?.job_title}" position at ${employerProfile?.organization_name} has been shortlisted. We will be in touch with next steps.`,
+      accepted: `Hello ${seekerName}, congratulations! Your application for the "${job?.job_title}" position at ${employerProfile?.organization_name} has been accepted. Please contact us to discuss next steps.`,
+      rejected: `Hello ${seekerName}, thank you for applying for the "${job?.job_title}" position at ${employerProfile?.organization_name}. Unfortunately, we will not be moving forward with your application at this time.`,
+    }
+    const text = messages[newStatus] || `Hello ${seekerName}, regarding your application for "${job?.job_title}" at ${employerProfile?.organization_name}.`
+    return `https://wa.me/${formatted}?text=${encodeURIComponent(text)}`
+  }
+
+  function getContactWhatsAppLink(phone) {
+    if (!phone) return null
+    const cleaned = phone.replace(/\D/g, '')
+    const formatted = cleaned.startsWith('0') ? '234' + cleaned.slice(1) : cleaned
     return `https://wa.me/${formatted}`
   }
 
@@ -191,7 +253,6 @@ export default function EmployerApplications() {
     <div style={styles.page}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
 
-        {/* BACK + HEADER */}
         <Link to="/employer/dashboard" style={styles.backLink}>← Back to Dashboard</Link>
 
         <div style={styles.pageHeader}>
@@ -201,10 +262,7 @@ export default function EmployerApplications() {
               {job.lga || job.location || 'Oke-Ogun'}
               {job.job_type && ` · ${job.job_type.replace('_', ' ')}`}
               {' · '}
-              <span style={{
-                ...styles.jobStatusPill,
-                ...(STATUS_STYLES[job.status] || {})
-              }}>
+              <span style={{ ...styles.jobStatusPill, ...(STATUS_STYLES[job.status] || {}) }}>
                 {job.status}
               </span>
             </p>
@@ -216,6 +274,10 @@ export default function EmployerApplications() {
             </span>
           </div>
         </div>
+
+        {updateError && (
+          <div style={styles.errorBanner}>{updateError}</div>
+        )}
 
         {/* FILTER TABS */}
         <div style={styles.filterRow}>
@@ -254,7 +316,7 @@ export default function EmployerApplications() {
               const seekerSkills = (seeker?.skills || [])
                 .map(id => skills[id])
                 .filter(Boolean)
-              const whatsappLink = getWhatsAppLink(
+              const contactWaLink = getContactWhatsAppLink(
                 seeker?.whatsapp_number || seeker?.phone_number
               )
 
@@ -362,42 +424,114 @@ export default function EmployerApplications() {
                     </div>
                   )}
 
+                  {/* ACTION SECTION */}
+                  <div style={styles.actionSection}>
+
+                    {/* SUBMITTED — show Shortlist + Accept + Reject */}
+                    {app.status === 'submitted' && (
+                      <div style={styles.actionRow}>
+                        <p style={styles.actionLabel}>Move this application:</p>
+                        <div style={styles.actionButtons}>
+                          {['shortlisted', 'accepted', 'rejected'].map(action => (
+                            <button
+                              key={action}
+                              onClick={() => updateStatus(app.id, action, seeker?.id, seeker?.email, seeker?.full_name)}
+                              disabled={updating === app.id}
+                              style={{ ...styles.actionBtn, ...(ACTION_STYLES[action] || {}) }}
+                            >
+                              {updating === app.id ? '...' : ACTION_LABELS[action]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SHORTLISTED — show badge + Final Decision section */}
+                    {app.status === 'shortlisted' && (
+                      <div style={styles.finalDecisionBox}>
+                        <p style={styles.finalDecisionTitle}>Final Decision</p>
+                        <p style={styles.finalDecisionHint}>
+                          This applicant is shortlisted. Make a final decision after interview or further review.
+                        </p>
+                        <div style={styles.actionButtons}>
+                          <button
+                            onClick={() => updateStatus(app.id, 'accepted', seeker?.id, seeker?.email, seeker?.full_name)}
+                            disabled={updating === app.id}
+                            style={{ ...styles.actionBtn, ...ACTION_STYLES.accepted }}
+                          >
+                            {updating === app.id ? '...' : 'Accept'}
+                          </button>
+                          <button
+                            onClick={() => updateStatus(app.id, 'rejected', seeker?.id, seeker?.email, seeker?.full_name)}
+                            disabled={updating === app.id}
+                            style={{ ...styles.actionBtn, ...ACTION_STYLES.rejected }}
+                          >
+                            {updating === app.id ? '...' : 'Reject'}
+                          </button>
+                        </div>
+                        {/* WhatsApp shortlist notification link */}
+                        {(seeker?.whatsapp_number || seeker?.phone_number) && (
+                          <a
+                            href={getWhatsAppLink(seeker.whatsapp_number || seeker.phone_number, seeker.full_name, 'shortlisted')}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={styles.waNotifyLink}
+                          >
+                            📲 Also notify via WhatsApp
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ACCEPTED — WhatsApp link to follow up */}
+                    {app.status === 'accepted' && (
+                      <div style={styles.decisionMadeRow}>
+                        <span style={{ ...styles.decisionBadge, backgroundColor: '#e8f5ee', color: '#1a6b3c' }}>
+                          ✓ Accepted
+                        </span>
+                        {(seeker?.whatsapp_number || seeker?.phone_number) && (
+                          <a
+                            href={getWhatsAppLink(seeker.whatsapp_number || seeker.phone_number, seeker.full_name, 'accepted')}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={styles.waNotifyLink}
+                          >
+                            📲 Send acceptance message via WhatsApp
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* REJECTED */}
+                    {app.status === 'rejected' && (
+                      <div style={styles.decisionMadeRow}>
+                        <span style={{ ...styles.decisionBadge, backgroundColor: '#fee2e2', color: '#b91c1c' }}>
+                          ✗ Rejected
+                        </span>
+                      </div>
+                    )}
+
+                    {/* WITHDRAWN */}
+                    {app.status === 'withdrawn' && (
+                      <div style={styles.decisionMadeRow}>
+                        <span style={{ ...styles.decisionBadge, backgroundColor: '#f3f4f6', color: '#6b7280' }}>
+                          Withdrawn by applicant
+                        </span>
+                      </div>
+                    )}
+
+                  </div>
+
                   {/* CARD FOOTER */}
                   <div style={styles.cardFooter}>
-                    <div style={styles.footerLeft}>
-                      {/* Status action buttons */}
-                      {(STATUS_ACTIONS[app.status] || []).map(action => (
-                        <button
-                          key={action}
-                          onClick={() => updateStatus(app.id, action)}
-                          disabled={updating === app.id}
-                          style={{
-                            ...styles.actionBtn,
-                            ...(ACTION_STYLES[action] || {})
-                          }}
-                        >
-                          {updating === app.id ? '...' : ACTION_LABELS[action]}
-                        </button>
-                      ))}
-                    </div>
                     <div style={styles.footerRight}>
                       {seeker?.cv_url && (
-                        <a
-                          href={seeker.cv_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={styles.cvLink}
-                        >
+                        <a href={seeker.cv_url} target="_blank" rel="noreferrer" style={styles.cvLink}>
                           View CV
                         </a>
                       )}
-                      {whatsappLink && (
-                        <a
-                          href={whatsappLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={styles.whatsappLink}
-                        >
+                      {contactWaLink && (
+                        <a href={contactWaLink} target="_blank" rel="noreferrer" style={styles.whatsappLink}>
                           WhatsApp
                         </a>
                       )}
@@ -437,8 +571,6 @@ const styles = {
   centred: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f7f5', padding: '24px' },
   loadingText: { color: '#888', fontSize: '15px' },
   backLink: { display: 'inline-block', fontSize: '14px', color: '#1a6b3c', textDecoration: 'none', fontWeight: '600', marginBottom: '20px' },
-
-  // Header
   pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' },
   pageTitle: { fontSize: 'clamp(18px, 3vw, 24px)', fontWeight: 'bold', color: '#222', margin: '0 0 4px 0' },
   pageSubtitle: { fontSize: '13px', color: '#888', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' },
@@ -446,14 +578,11 @@ const styles = {
   totalCount: { display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#fff', borderRadius: '10px', padding: '12px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   totalCountNum: { fontSize: '28px', fontWeight: 'bold', color: '#1a6b3c' },
   totalCountLabel: { fontSize: '12px', color: '#888' },
-
-  // Filter tabs
+  errorBanner: { backgroundColor: '#fee2e2', color: '#b91c1c', fontSize: '13px', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
   filterRow: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' },
   filterBtn: { padding: '6px 14px', borderRadius: '20px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#888' },
   filterBtnActive: { backgroundColor: '#1a6b3c', color: '#fff', borderColor: '#1a6b3c' },
   filterCount: { fontWeight: '400' },
-
-  // Application cards
   appsList: { display: 'flex', flexDirection: 'column', gap: '12px' },
   appCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   appCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' },
@@ -465,29 +594,39 @@ const styles = {
   seekerMeta: { fontSize: '12px', color: '#888', margin: 0 },
   statusPill: { fontSize: '12px', padding: '3px 10px', borderRadius: '10px', fontWeight: '600' },
   appliedDate: { fontSize: '11px', color: '#aaa', margin: 0 },
-
-  // Cover note
   coverNote: { fontSize: '13px', color: '#666', fontStyle: 'italic', margin: '0 0 10px 0', paddingLeft: '12px', borderLeft: '3px solid #e8f5ee' },
-
-  // Quick info tags
   quickInfo: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' },
   quickTag: { fontSize: '11px', padding: '3px 10px', backgroundColor: '#f3f4f6', color: '#555', borderRadius: '10px' },
   skillTag: { fontSize: '11px', padding: '3px 10px', backgroundColor: '#e8f5ee', color: '#1a6b3c', borderRadius: '10px', fontWeight: '600' },
-
-  // Expanded details
   expandedDetails: { backgroundColor: '#f9f9f9', borderRadius: '8px', padding: '16px', marginBottom: '12px' },
   allSkills: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' },
 
+  // Action section
+  actionSection: { borderTop: '1px solid #f0f0f0', paddingTop: '14px', marginBottom: '4px' },
+  actionRow: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' },
+  actionLabel: { fontSize: '12px', color: '#888', fontWeight: '600', margin: 0 },
+  actionButtons: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
+  actionBtn: { padding: '6px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: 'none' },
+
+  // Final decision box (shortlisted state)
+  finalDecisionBox: { backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '14px 16px' },
+  finalDecisionTitle: { fontSize: '13px', fontWeight: '700', color: '#0369a1', margin: '0 0 4px 0' },
+  finalDecisionHint: { fontSize: '12px', color: '#555', margin: '0 0 12px 0' },
+
+  // Decision made (accepted/rejected)
+  decisionMadeRow: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' },
+  decisionBadge: { fontSize: '13px', padding: '5px 14px', borderRadius: '8px', fontWeight: '700' },
+
+  // WhatsApp notify link
+  waNotifyLink: { display: 'inline-block', marginTop: '10px', fontSize: '13px', color: '#25d366', fontWeight: '600', textDecoration: 'none' },
+
   // Card footer
-  cardFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' },
-  footerLeft: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
+  cardFooter: { display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid #f0f0f0', marginTop: '12px' },
   footerRight: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' },
-  actionBtn: { padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' },
   cvLink: { fontSize: '13px', color: '#1a6b3c', fontWeight: '600', textDecoration: 'none' },
   whatsappLink: { fontSize: '13px', color: '#25d366', fontWeight: '600', textDecoration: 'none' },
   expandBtn: { fontSize: '13px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600', padding: '4px 0' },
 
-  // Empty
   emptyCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   emptyText: { fontSize: '14px', color: '#888' },
 }
