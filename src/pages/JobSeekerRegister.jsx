@@ -232,7 +232,7 @@ export default function JobSeekerRegister() {
         seeker_type: seekerType,
         cv_url,
         status: 'approved',
-        ...(user ? { auth_user_id: user.id } : {}),
+        ...(user ? { auth_user_id: user.id, email: user.email } : {}),
       }
 
       if (seekerType === 'student') {
