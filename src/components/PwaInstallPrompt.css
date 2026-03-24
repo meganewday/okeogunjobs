@@ -3,9 +3,10 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: #f0f0f0;
+  background-color: #1a6b3c;
+  color: #fff;
   padding: 1rem;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   transition: transform 0.3s ease-in-out;
 }
@@ -20,7 +21,8 @@
 
 .pwa-install-prompt p {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .pwa-install-prompt-buttons {
@@ -30,19 +32,21 @@
 
 .pwa-install-button,
 .pwa-dismiss-button {
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 .pwa-install-button {
-  background-color: #007bff;
-  color: white;
+  background-color: #fff;
+  color: #1a6b3c;
 }
 
 .pwa-dismiss-button {
   background-color: transparent;
-  color: #333;
+  color: #fff;
+  opacity: 0.8;
 }
