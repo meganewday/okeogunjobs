@@ -24,6 +24,7 @@ import EmployerDashboard from './pages/EmployerDashboard'
 import EmployerApplications from './pages/EmployerApplications'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import FAQ from './pages/FAQ'
+import PwaInstallPrompt from './components/PwaInstallPrompt'
 
 function Layout({ children }) {
   const location = useLocation()
@@ -34,6 +35,7 @@ function Layout({ children }) {
       {!hideLayout && <Header />}
       {children}
       {!hideLayout && <Footer />}
+      <PwaInstallPrompt />
     </>
   )
 }
