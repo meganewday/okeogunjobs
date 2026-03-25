@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /profile
+Disallow: /employer/dashboard
+Disallow: /employer/applications/
+
+Sitemap: https://okeogunjobs.com/sitemap.xml
