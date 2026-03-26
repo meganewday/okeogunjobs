@@ -157,7 +157,7 @@ export default function Home() {
             </h1>
             <p style={styles.heroSub}>
               {APP_NAME} is a free job board built for the Oke-Ogun zone of Oyo State.
-              It covers 9 LGAs, serves skilled workers, unskilled labour, and IT students,
+              It covers 10 LGAs, serves skilled workers, unskilled labour, and IT students,
               and every listing is reviewed before it goes live.
             </p>
             <div style={styles.heroButtons}>
@@ -178,7 +178,7 @@ export default function Home() {
             </div>
             <div style={styles.statDivider} />
             <div style={styles.statItem}>
-              <span style={styles.statNumber}>9</span>
+              <span style={styles.statNumber}>10</span>
               <span style={styles.statLabel}>LGAs Covered</span>
             </div>
           </div>
@@ -192,9 +192,9 @@ export default function Home() {
             <h2 style={styles.sectionTitle}>About {APP_NAME}</h2>
             <p style={styles.sectionText}>
               {APP_NAME} is a free job board built specifically for the Oke-Ogun
-              geopolitical zone of Oyo State, Nigeria. It covers 9 LGAs — Saki West,
-              Saki East, Atisbo, Oorelope, Olorunsogo, Iseyin, Itesiwaju, Kajola,
-              and Iwajowa.
+              geopolitical zone of Oyo State, Nigeria. It covers 10 LGAs — Saki West,
+              Saki East, Atisbo, Oorelope, Olorunsogo, Iseyin, Itesiwaju, Kajola, 
+              Iwajowa, and Irepo.
             </p>
             <p style={styles.sectionText}>
               The idea is simple. People in this region need work. Employers in this

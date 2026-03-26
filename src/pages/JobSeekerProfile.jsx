@@ -18,7 +18,7 @@ function useIsDesktop() {
 
 const LGAs = [
   'Saki West', 'Saki East', 'Atisbo', 'Oorelope', 'Olorunsogo',
-  'Iseyin', 'Itesiwaju', 'Kajola', 'Iwajowa'
+  'Iseyin', 'Itesiwaju', 'Kajola', 'Iwajowa', 'Irepo'
 ]
 
 const EDUCATION_LEVELS = [
