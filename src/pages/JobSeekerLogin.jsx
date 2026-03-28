@@ -4,14 +4,71 @@ import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { recordActivity } from '../lib/inactivity'
 
+// ─── Global CSS ───────────────────────────────────────────────────────────────
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+  * { box-sizing: border-box; }
+  .oj-login-input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: 'Outfit', sans-serif;
+    border: 1.5px solid #dcfce7;
+    border-radius: 12px;
+    background: #f0fdf4;
+    color: #14532d;
+    outline: none;
+    transition: border 0.15s, box-shadow 0.15s;
+  }
+  .oj-login-input::placeholder { color: #9ca3af; }
+  .oj-login-input:focus {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22,163,74,0.12);
+    background: #fff;
+  }
+  .oj-login-btn {
+    width: 100%;
+    padding: 14px;
+    background: #16a34a;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(22,163,74,0.32);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .oj-login-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(22,163,74,0.4);
+  }
+  .oj-login-btn:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
+`
+
+// ─── Wordmark ─────────────────────────────────────────────────────────────────
+function LogoMark() {
+  return (
+    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 28 }}>
+      <img src="/logo.png" alt="OkeOgunJobs" style={{ height: 36, width: 'auto', borderRadius: 7 }} />
+      <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 17, fontWeight: 900, letterSpacing: '-0.02em' }}>
+        <span style={{ color: '#14532d' }}>Oke-Ogun </span>
+        <span style={{ color: '#16a34a' }}>Jobs</span>
+      </span>
+    </Link>
+  )
+}
+
 export default function JobSeekerLogin() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const resetSuccess = searchParams.get('reset') === 'success'
-  const timedOut = searchParams.get('timeout') === '1'
-  const [form, setForm] = useState({ email: '', password: '' })
+  const timedOut     = searchParams.get('timeout') === '1'
+
+  const [form, setForm]           = useState({ email: '', password: '' })
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]         = useState('')
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -21,12 +78,10 @@ export default function JobSeekerLogin() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-
     if (!form.email || !form.password) {
       setError('Email and password are required.')
       return
     }
-
     setSubmitting(true)
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -35,7 +90,6 @@ export default function JobSeekerLogin() {
       })
       if (signInError) throw signInError
 
-      // Check if this user has a job seeker profile
       const { data: profile } = await supabase
         .from('job_seekers')
         .select('id')
@@ -60,47 +114,69 @@ export default function JobSeekerLogin() {
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Log in to your account</h1>
-        <p style={styles.subtitle}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '40px 24px',
+      fontFamily: "'Outfit', sans-serif",
+    }}>
+      <style>{CSS}</style>
+
+      <div style={{
+        background: '#fff',
+        borderRadius: 24,
+        padding: '40px 36px',
+        width: '100%',
+        maxWidth: 440,
+        border: '1.5px solid #dcfce7',
+        boxShadow: '0 8px 32px rgba(22,163,74,0.1)',
+      }}>
+        <LogoMark />
+
+        <h1 style={{ fontSize: 22, fontWeight: 900, color: '#14532d', margin: '0 0 8px' }}>
+          Log in to your account
+        </h1>
+        <p style={{ fontSize: 14, color: '#4b6358', lineHeight: 1.65, margin: '0 0 24px' }}>
           Log in to view your profile, track your applications, and apply for jobs on {APP_NAME}.
         </p>
 
+        {/* Banners */}
         {resetSuccess && (
-          <div style={styles.successBanner}>
-            Password updated. You can now log in with your new password.
+          <div style={{ background: '#dcfce7', color: '#166534', fontSize: 13, padding: '11px 14px', borderRadius: 12, marginBottom: 20, fontWeight: 700, border: '1px solid #bbf7d0' }}>
+            ✓ Password updated. You can now log in with your new password.
           </div>
         )}
         {timedOut && (
-          <div style={styles.timeoutBanner}>
-            Your session expired after 24 hours of inactivity. Please log in again.
-          </div>
-        )}
-        {timedOut && (
-          <div style={styles.timeoutBanner}>
-            Your session expired due to inactivity. Please log in again.
+          <div style={{ background: '#fff8e1', color: '#b45309', fontSize: 13, padding: '11px 14px', borderRadius: 12, marginBottom: 20, fontWeight: 600, border: '1px solid #fde68a' }}>
+            ⏱ Your session expired due to inactivity. Please log in again.
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.field}>
-            <label style={styles.label}>Email Address *</label>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#166534', marginBottom: 7 }}>
+              Email Address *
+            </label>
             <input
-              style={styles.input}
+              className="oj-login-input"
               type="email"
               name="email"
               value={form.email}
               onChange={handleChange}
-              placeholder="e.g. yourname@email.com"
+              placeholder="yourname@email.com"
               autoComplete="email"
             />
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Password *</label>
+          <div style={{ marginBottom: 8 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#166534', marginBottom: 7 }}>
+              Password *
+            </label>
             <input
-              style={styles.input}
+              className="oj-login-input"
               type="password"
               name="password"
               value={form.password}
@@ -110,52 +186,36 @@ export default function JobSeekerLogin() {
             />
           </div>
 
-          {error && <p style={styles.error}>{error}</p>}
-
-          <div style={styles.forgotRow}>
-            <Link to="/reset-password" style={styles.forgotLink}>Forgot your password?</Link>
+          {/* Forgot password */}
+          <div style={{ textAlign: 'right', marginBottom: 16 }}>
+            <Link to="/reset-password" style={{ fontSize: 13, color: '#16a34a', textDecoration: 'none', fontWeight: 700 }}>
+              Forgot your password?
+            </Link>
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{ ...styles.btn, ...(submitting ? styles.btnDisabled : {}) }}
-          >
+          {error && (
+            <div style={{ background: '#fee2e2', color: '#dc2626', fontSize: 13, padding: '10px 14px', borderRadius: 10, marginBottom: 16, fontWeight: 600 }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" disabled={submitting} className="oj-login-btn">
             {submitting ? 'Logging in...' : 'Log In'}
           </button>
         </form>
 
-        <p style={styles.footer}>
-          No account yet?{' '}
-          <Link to="/signup" style={styles.link}>Create one here</Link>
-        </p>
-
-        <p style={styles.footer}>
-          Are you an employer?{' '}
-          <Link to="/employer/login" style={styles.link}>Employer login</Link>
-        </p>
+        {/* Footer links */}
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+          <p style={{ fontSize: 13, color: '#4b6358', margin: 0 }}>
+            No account yet?{' '}
+            <Link to="/signup" style={{ color: '#16a34a', fontWeight: 700, textDecoration: 'none' }}>Create one here</Link>
+          </p>
+          <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>
+            Are you an employer?{' '}
+            <Link to="/employer/login" style={{ color: '#16a34a', fontWeight: 600, textDecoration: 'none' }}>Employer login</Link>
+          </p>
+        </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  page: { minHeight: '100vh', backgroundColor: '#f5f7f5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' },
-  card: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px 32px', width: '100%', maxWidth: '440px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
-  title: { fontSize: '22px', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
-  subtitle: { fontSize: '14px', color: '#666', lineHeight: '1.6', marginBottom: '24px' },
-  form: {},
-  field: { marginBottom: '18px' },
-  label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },
-  input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' },
-  forgotRow: { textAlign: 'right', marginBottom: '16px', marginTop: '-8px' },
-  forgotLink: { fontSize: '13px', color: '#1a6b3c', textDecoration: 'none', fontWeight: '600' },
-  successBanner: { backgroundColor: '#e8f5ee', color: '#1a6b3c', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
-  timeoutBanner: { backgroundColor: '#fff8e1', color: '#b45309', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
-  timeoutBanner: { backgroundColor: '#fff8e1', color: '#b45309', fontSize: '13px', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: '600' },
-  error: { color: '#e53e3e', fontSize: '13px', marginBottom: '12px' },
-  btn: { width: '100%', padding: '13px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '15px', fontWeight: '600', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '4px' },
-  btnDisabled: { backgroundColor: '#aaa', cursor: 'not-allowed' },
-  footer: { fontSize: '13px', color: '#666', textAlign: 'center', marginTop: '16px' },
-  link: { color: '#1a6b3c', fontWeight: '600', textDecoration: 'none' },
 }
