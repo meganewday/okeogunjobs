@@ -4,12 +4,69 @@ import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { verifyRecaptcha } from '../lib/recaptcha'
 
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+  * { box-sizing: border-box; }
+  .oj-input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: 'Outfit', sans-serif;
+    border: 1.5px solid #dcfce7;
+    border-radius: 12px;
+    background: #f0fdf4;
+    color: #14532d;
+    outline: none;
+    transition: border 0.15s, box-shadow 0.15s;
+  }
+  .oj-input::placeholder { color: #9ca3af; }
+  .oj-input:focus {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22,163,74,0.12);
+    background: #fff;
+  }
+  .oj-btn {
+    width: 100%;
+    padding: 14px;
+    background: #16a34a;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(22,163,74,0.32);
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: block;
+    text-align: center;
+    text-decoration: none;
+  }
+  .oj-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(22,163,74,0.4);
+  }
+  .oj-btn:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
+`
+
+function LogoMark() {
+  return (
+    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 28 }}>
+      <img src="/logo.png" alt="OkeOgunJobs" style={{ height: 36, width: 'auto', borderRadius: 7 }} />
+      <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 17, fontWeight: 900, letterSpacing: '-0.02em' }}>
+        <span style={{ color: '#14532d' }}>Oke-Ogun </span>
+        <span style={{ color: '#16a34a' }}>Jobs</span>
+      </span>
+    </Link>
+  )
+}
+
 export default function JobSeekerSignup() {
-  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' })
+  const [form, setForm]             = useState({ email: '', password: '', confirmPassword: '' })
   const [submitting, setSubmitting] = useState(false)
-  const [sent, setSent] = useState(false)
-  const [sentEmail, setSentEmail] = useState('')
-  const [error, setError] = useState('')
+  const [sent, setSent]             = useState(false)
+  const [sentEmail, setSentEmail]   = useState('')
+  const [error, setError]           = useState('')
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -51,8 +108,7 @@ export default function JobSeekerSignup() {
       })
       if (signUpError) throw signUpError
 
-      // Supabase silently succeeds for duplicate emails when confirmation is ON
-      // Detect it via empty identities array
+      // Detect duplicate email — Supabase silently succeeds with empty identities
       if (signUpData?.user?.identities?.length === 0) {
         setError('An account with this email already exists. Try logging in instead.')
         setSubmitting(false)
@@ -72,112 +128,109 @@ export default function JobSeekerSignup() {
     }
   }
 
+  const pageStyle = {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '40px 24px',
+    fontFamily: "'Outfit', sans-serif",
+  }
+
+  const cardStyle = {
+    background: '#fff',
+    borderRadius: 24,
+    padding: '40px 36px',
+    width: '100%',
+    maxWidth: 440,
+    border: '1.5px solid #dcfce7',
+    boxShadow: '0 8px 32px rgba(22,163,74,0.1)',
+  }
+
+  // ── Confirmation sent state ───────────────────────────────────────────────
   if (sent) {
     return (
-      <div style={styles.page}>
-        <div style={styles.card}>
-          <div style={styles.checkIcon}>✉️</div>
-          <h1 style={styles.title}>Check your email</h1>
-          <p style={styles.subtitle}>
-            We sent a confirmation link to <strong>{sentEmail}</strong>. Open the link
-            in your email to activate your account, then come back to complete your profile.
+      <div style={pageStyle}>
+        <style>{CSS}</style>
+        <div style={{ ...cardStyle, textAlign: 'center' }}>
+          <LogoMark />
+          <div style={{ fontSize: 52, marginBottom: 16 }}>✉️</div>
+          <h1 style={{ fontSize: 22, fontWeight: 900, color: '#14532d', margin: '0 0 12px' }}>
+            Check your email
+          </h1>
+          <p style={{ fontSize: 14, color: '#4b6358', lineHeight: 1.7, margin: '0 0 10px' }}>
+            We sent a confirmation link to <strong style={{ color: '#14532d' }}>{sentEmail}</strong>.
+            Open the link in your email to activate your account, then come back to complete your profile.
           </p>
-          <p style={styles.hint}>
+          <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 28px' }}>
             Check your spam folder if you do not see it within a few minutes.
           </p>
-          <Link to="/login" style={styles.btn}>Go to Login</Link>
+          <Link to="/login" className="oj-btn">Go to Login</Link>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Create your account</h1>
-        <p style={styles.subtitle}>
-          Sign up to register your profile on {APP_NAME} and apply for jobs directly
-          from the platform. You will need to confirm your email before you can log in.
+    <div style={pageStyle}>
+      <style>{CSS}</style>
+
+      <div style={cardStyle}>
+        <LogoMark />
+
+        <h1 style={{ fontSize: 22, fontWeight: 900, color: '#14532d', margin: '0 0 8px' }}>
+          Create your account
+        </h1>
+        <p style={{ fontSize: 14, color: '#4b6358', lineHeight: 1.65, margin: '0 0 28px' }}>
+          Sign up to register your profile on {APP_NAME} and apply for jobs directly from the platform.
+          You will need to confirm your email before you can log in.
         </p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.field}>
-            <label style={styles.label}>Email Address *</label>
-            <input
-              style={styles.input}
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="e.g. yourname@email.com"
-              autoComplete="email"
-            />
-          </div>
+        <form onSubmit={handleSubmit}>
+          {[
+            { label: 'Email Address *',   name: 'email',           type: 'email',    placeholder: 'yourname@email.com',   autoComplete: 'email' },
+            { label: 'Password *',        name: 'password',        type: 'password', placeholder: 'At least 8 characters', autoComplete: 'new-password' },
+            { label: 'Confirm Password *',name: 'confirmPassword', type: 'password', placeholder: 'Repeat your password',  autoComplete: 'new-password' },
+          ].map(f => (
+            <div key={f.name} style={{ marginBottom: 18 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#166634', marginBottom: 7 }}>
+                {f.label}
+              </label>
+              <input
+                className="oj-input"
+                type={f.type}
+                name={f.name}
+                value={form[f.name]}
+                onChange={handleChange}
+                placeholder={f.placeholder}
+                autoComplete={f.autoComplete}
+              />
+            </div>
+          ))}
 
-          <div style={styles.field}>
-            <label style={styles.label}>Password *</label>
-            <input
-              style={styles.input}
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="At least 8 characters"
-              autoComplete="new-password"
-            />
-          </div>
+          {error && (
+            <div style={{ background: '#fee2e2', color: '#dc2626', fontSize: 13, padding: '10px 14px', borderRadius: 10, marginBottom: 16, fontWeight: 600 }}>
+              {error}
+            </div>
+          )}
 
-          <div style={styles.field}>
-            <label style={styles.label}>Confirm Password *</label>
-            <input
-              style={styles.input}
-              type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Repeat your password"
-              autoComplete="new-password"
-            />
-          </div>
-
-          {error && <p style={styles.error}>{error}</p>}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{ ...styles.btn, ...(submitting ? styles.btnDisabled : {}), width: '100%' }}
-          >
+          <button type="submit" disabled={submitting} className="oj-btn">
             {submitting ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
-        <p style={styles.footer}>
-          Already have an account?{' '}
-          <Link to="/login" style={styles.link}>Log in</Link>
-        </p>
-        <p style={styles.footer}>
-          Looking to post a job?{' '}
-          <Link to="/employer/signup" style={styles.link}>Register as an employer</Link>
-        </p>
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+          <p style={{ fontSize: 13, color: '#4b6358', margin: 0 }}>
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: '#16a34a', fontWeight: 700, textDecoration: 'none' }}>Log in</Link>
+          </p>
+          <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>
+            Looking to post a job?{' '}
+            <Link to="/employer/signup" style={{ color: '#16a34a', fontWeight: 600, textDecoration: 'none' }}>Register as an employer</Link>
+          </p>
+        </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  page: { minHeight: '100vh', backgroundColor: '#f5f7f5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' },
-  card: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px 32px', width: '100%', maxWidth: '440px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', textAlign: 'center' },
-  checkIcon: { fontSize: '48px', marginBottom: '16px' },
-  title: { fontSize: '22px', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px', textAlign: 'center' },
-  subtitle: { fontSize: '14px', color: '#666', lineHeight: '1.6', marginBottom: '16px', textAlign: 'center' },
-  hint: { fontSize: '13px', color: '#aaa', marginBottom: '24px' },
-  form: { textAlign: 'left' },
-  field: { marginBottom: '18px' },
-  label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },
-  input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' },
-  error: { color: '#e53e3e', fontSize: '13px', marginBottom: '12px' },
-  btn: { display: 'inline-block', padding: '13px 28px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '15px', fontWeight: '600', border: 'none', borderRadius: '8px', cursor: 'pointer', textDecoration: 'none', boxSizing: 'border-box' },
-  btnDisabled: { backgroundColor: '#aaa', cursor: 'not-allowed' },
-  footer: { fontSize: '13px', color: '#666', textAlign: 'center', marginTop: '16px' },
-  link: { color: '#1a6b3c', fontWeight: '600', textDecoration: 'none' },
 }
