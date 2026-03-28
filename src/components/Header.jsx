@@ -17,12 +17,16 @@ function useIsDesktop() {
 // ─── Wordmark Logo ────────────────────────────────────────────────────────────
 function Wordmark() {
   return (
-    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
       <img
         src="/logo.png"
-        alt="OkeOgunJobs — Oke-Ogun Job Bank"
-        style={{ height: 42, width: 'auto', display: 'block' }}
+        alt="OkeOgunJobs logo"
+        style={{ height: 38, width: 'auto', display: 'block', borderRadius: 8 }}
       />
+      <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 18, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>
+        <span style={{ color: '#14532d' }}>Oke-Ogun </span>
+        <span style={{ color: '#16a34a' }}>Jobs</span>
+      </span>
     </Link>
   )
 }
