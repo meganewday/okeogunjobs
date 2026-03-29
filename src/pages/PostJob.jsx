@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
@@ -17,56 +17,165 @@ function useIsDesktop() {
 
 const LGAs = [
   'Saki West', 'Saki East', 'Atisbo', 'Oorelope', 'Olorunsogo',
-  'Iseyin', 'Itesiwaju', 'Kajola', 'Iwajowa', 'Irepo'
+  'Iseyin', 'Itesiwaju', 'Kajola', 'Iwajowa', 'Irepo',
 ]
 
 const JOB_TYPES = [
   { value: 'full_time', label: 'Full Time' },
   { value: 'part_time', label: 'Part Time' },
-  { value: 'contract', label: 'Contract' },
+  { value: 'contract',  label: 'Contract' },
 ]
 
+const LABOUR_OPTIONS = [
+  { value: 'skilled',    emoji: '🛠', label: 'Skilled',              desc: 'Requires a specific skill or trade' },
+  { value: 'unskilled',  emoji: '💪', label: 'Unskilled',            desc: 'General or physical labour, no specific skill needed' },
+  { value: 'internship', emoji: '🎓', label: 'Internship / IT / SIWES', desc: 'Student industrial attachment or placement' },
+]
+
+const APPLICATION_METHODS = [
+  { value: 'platform', label: '🖥 Apply on Platform', desc: 'Seekers apply directly through OkeOgunJobs' },
+  { value: 'whatsapp', label: '💬 Apply via WhatsApp', desc: 'Seekers contact you directly on WhatsApp' },
+  { value: 'both',     label: '✅ Both',               desc: 'Seekers can choose either method' },
+]
+
+// ─── Global CSS ───────────────────────────────────────────────────────────────
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+  * { box-sizing: border-box; }
+  .oj-input {
+    width: 100%; padding: 11px 14px; font-size: 14px;
+    font-family: 'Outfit', sans-serif;
+    border: 1.5px solid #dcfce7; border-radius: 12px;
+    background: #f0fdf4; color: #14532d; outline: none;
+    transition: border 0.15s, box-shadow 0.15s;
+  }
+  .oj-input::placeholder { color: #9ca3af; }
+  .oj-input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.12); background: #fff; }
+  .oj-skill-btn {
+    padding: 7px 14px; font-size: 13px; border-radius: 50px;
+    border: 1.5px solid #dcfce7; background: #f0fdf4;
+    cursor: pointer; color: #166534; font-weight: 500;
+    font-family: 'Outfit', sans-serif; transition: all 0.15s;
+  }
+  .oj-skill-btn:hover { border-color: #16a34a; background: #dcfce7; }
+  .oj-skill-btn-active { background: #16a34a !important; color: #fff !important; border-color: #16a34a !important; font-weight: 700 !important; }
+  .oj-other-btn {
+    padding: 7px 14px; font-size: 13px; border-radius: 50px;
+    border: 1.5px dashed #bbf7d0; background: transparent;
+    cursor: pointer; color: #16a34a; font-weight: 600;
+    font-family: 'Outfit', sans-serif; transition: all 0.15s;
+  }
+  .oj-other-btn:hover { background: #f0fdf4; border-color: #16a34a; }
+  .oj-other-btn-active { background: #f0fdf4 !important; border-color: #16a34a !important; border-style: solid !important; }
+  .oj-submit-btn {
+    width: 100%; padding: 14px; background: #16a34a; color: #fff;
+    font-size: 15px; font-weight: 700; font-family: 'Outfit', sans-serif;
+    border: none; border-radius: 50px; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(22,163,74,0.32);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .oj-submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(22,163,74,0.4); }
+  .oj-submit-btn:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
+`
+
+function SectionHeader({ children }) {
+  return (
+    <h3 style={{ fontSize:15, fontWeight:800, color:'#16a34a', margin:'28px 0 16px', paddingBottom:10, borderBottom:'2px solid #dcfce7' }}>
+      {children}
+    </h3>
+  )
+}
+
+function FieldLabel({ children, required }) {
+  return (
+    <label style={{ display:'block', fontSize:13, fontWeight:700, color:'#166634', marginBottom:7 }}>
+      {children}{required && ' *'}
+    </label>
+  )
+}
+
+// ─── Skills section with "Other" custom input ─────────────────────────────────
+function SkillsSection({ categories, selectedSkills, onToggle, customSkills, onCustomChange, label }) {
+  const [openOther, setOpenOther] = useState({}) // category → bool
+
+  function toggleOther(cat) {
+    setOpenOther(prev => ({ ...prev, [cat]: !prev[cat] }))
+  }
+
+  return (
+    <div style={{ marginBottom:20 }}>
+      <FieldLabel>{label}</FieldLabel>
+      {categories.map(([cat, catSkills]) => (
+        <div key={cat} style={{ marginBottom:16 }}>
+          {cat !== 'General Labour' && (
+            <p style={{ fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', margin:'0 0 8px' }}>{cat}</p>
+          )}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {catSkills.map(skill => (
+              <button key={skill.id} type="button" onClick={() => onToggle(skill.id)}
+                className={`oj-skill-btn${selectedSkills.includes(skill.id) ? ' oj-skill-btn-active' : ''}`}>
+                {skill.name}
+              </button>
+            ))}
+            {/* Other button */}
+            <button type="button" onClick={() => toggleOther(cat)}
+              className={`oj-other-btn${openOther[cat] ? ' oj-other-btn-active' : ''}`}>
+              + Other
+            </button>
+          </div>
+          {/* Custom skill input */}
+          {openOther[cat] && (
+            <div style={{ marginTop:10, display:'flex', alignItems:'center', gap:10 }}>
+              <input
+                className="oj-input"
+                style={{ maxWidth:320 }}
+                type="text"
+                placeholder={`Enter custom skill for ${cat === 'General Labour' ? 'this category' : cat}…`}
+                value={customSkills[cat] || ''}
+                onChange={e => onCustomChange(cat, e.target.value)}
+              />
+              {customSkills[cat] && (
+                <span style={{ fontSize:12, color:'#16a34a', fontWeight:600 }}>✓ Will be saved</span>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function PostJob() {
   const { employer, employerProfile, employerLoading } = useEmployerAuth()
-  const navigate = useNavigate()
-  const [skills, setSkills] = useState([])
-  const [labourType, setLabourType] = useState('')
-  const [form, setForm] = useState({
-    job_title: '',
-    job_description: '',
-    job_type: '',
-    location: '',
-    lga: '',
-    selectedSkills: [],
-    application_method: '',
-    department_unit: '',
-    duration: '',
-    stipend_available: '',
-    siwes_accredited: '',
-  })
-  const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
+  const navigate  = useNavigate()
   const isDesktop = useIsDesktop()
 
+  const [skills, setSkills]           = useState([])
+  const [labourType, setLabourType]   = useState('')
+  const [customSkills, setCustomSkills] = useState({}) // category → custom text
+  const [form, setForm]               = useState({
+    job_title: '', job_description: '', job_type: '',
+    location: '', lga: '', selectedSkills: [],
+    application_method: '',
+    department_unit: '', duration: '', stipend_available: '', siwes_accredited: '',
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [success, setSuccess]       = useState(false)
+  const [error, setError]           = useState('')
+
   useEffect(() => {
-    if (!employerLoading && !employer) {
-      navigate('/employer/login?next=post-job')
-    }
+    if (!employerLoading && !employer) navigate('/employer/login?next=post-job')
   }, [employer, employerLoading, navigate])
 
   useEffect(() => {
     async function fetchSkills() {
-      const { data } = await supabase
-        .from('skills')
-        .select('*')
-        .order('category')
+      const { data } = await supabase.from('skills').select('*').order('category')
       if (data) setSkills(data)
     }
     fetchSkills()
   }, [])
 
-  // Pre-fill location from employer profile when it loads
   useEffect(() => {
     if (employerProfile?.lga) {
       setForm(prev => ({ ...prev, lga: prev.lga || employerProfile.lga }))
@@ -81,40 +190,28 @@ export default function PostJob() {
   function handleSkillToggle(skillId) {
     setForm(prev => {
       const already = prev.selectedSkills.includes(skillId)
-      return {
-        ...prev,
-        selectedSkills: already
-          ? prev.selectedSkills.filter(id => id !== skillId)
-          : [...prev.selectedSkills, skillId]
-      }
+      return { ...prev, selectedSkills: already ? prev.selectedSkills.filter(id => id !== skillId) : [...prev.selectedSkills, skillId] }
     })
+  }
+
+  function handleCustomSkillChange(cat, value) {
+    setCustomSkills(prev => ({ ...prev, [cat]: value }))
   }
 
   function handleLabourTypeChange(type) {
     setLabourType(type)
-    setForm(prev => ({ ...prev, selectedSkills: [] }))
+    setForm(prev => ({ ...prev, selectedSkills: [], application_method: '' }))
+    setCustomSkills({})
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
 
-    if (!labourType) {
-      setError('Please select whether this is a skilled, unskilled, or internship position.')
-      return
-    }
-    if (!form.job_title || !form.job_description) {
-      setError('Job title and job description are required.')
-      return
-    }
-    if (labourType !== 'internship' && !form.job_type) {
-      setError('Please select a job type.')
-      return
-    }
-    if (!form.application_method && labourType !== 'internship') {
-      setError('Please select an application method.')
-      return
-    }
+    if (!labourType) { setError('Please select whether this is a skilled, unskilled, or internship position.'); return }
+    if (!form.job_title || !form.job_description) { setError('Job title and job description are required.'); return }
+    if (labourType !== 'internship' && !form.job_type) { setError('Please select a job type.'); return }
+    if (!form.application_method && labourType !== 'internship') { setError('Please select an application method.'); return }
 
     setSubmitting(true)
     try {
@@ -125,7 +222,6 @@ export default function PostJob() {
         return
       }
 
-      // Employer must be logged in — profile is auto-attached
       const employerId = employerProfile?.id
       if (!employerId) {
         setError('Your employer profile could not be found. Please contact support.')
@@ -133,17 +229,22 @@ export default function PostJob() {
         return
       }
 
+      // Build custom_skills string from all filled-in custom entries
+      const customSkillsString = Object.values(customSkills)
+        .map(v => v.trim()).filter(Boolean).join(', ') || null
+
       const jobPayload = {
-        employer_id: employerId,
-        job_title: form.job_title.trim(),
-        job_description: form.job_description.trim(),
-        job_type: labourType === 'internship' ? 'internship' : form.job_type,
-        labour_type: labourType,
-        location: form.location.trim() || null,
-        lga: form.lga || null,
-        skills_required: form.selectedSkills.length > 0 ? form.selectedSkills : null,
-        application_method: form.application_method || 'phone',
-        status: 'pending',
+        employer_id:        employerId,
+        job_title:          form.job_title.trim(),
+        job_description:    form.job_description.trim(),
+        job_type:           labourType === 'internship' ? 'internship' : form.job_type,
+        labour_type:        labourType,
+        location:           form.location.trim() || null,
+        lga:                form.lga || null,
+        skills_required:    form.selectedSkills.length > 0 ? form.selectedSkills : null,
+        custom_skills:      customSkillsString,
+        application_method: form.application_method || 'platform',
+        status:             'pending',
       }
 
       if (labourType === 'internship') {
@@ -151,9 +252,7 @@ export default function PostJob() {
           `${form.job_description.trim()}\n\nDepartment/Unit: ${form.department_unit || 'Not specified'}\nDuration: ${form.duration || 'Not specified'}\nStipend: ${form.stipend_available || 'Not specified'}\nSIWES Accredited: ${form.siwes_accredited || 'Not specified'}`
       }
 
-      const { error: jobError } = await supabase
-        .from('job_listings')
-        .insert(jobPayload)
+      const { error: jobError } = await supabase.from('job_listings').insert(jobPayload)
       if (jobError) throw jobError
 
       setSuccess(true)
@@ -165,25 +264,34 @@ export default function PostJob() {
     }
   }
 
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (employerLoading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f7f5' }}>
-        <p style={{ color: '#888', fontSize: '15px' }}>Loading...</p>
+      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f0fdf4', fontFamily:"'Outfit',sans-serif" }}>
+        <style>{CSS}</style>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ width:48, height:48, borderRadius:'50%', border:'4px solid #dcfce7', borderTopColor:'#16a34a', animation:'spin 0.8s linear infinite', margin:'0 auto 16px' }} />
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          <p style={{ color:'#4b6358', fontSize:15 }}>Loading...</p>
+        </div>
       </div>
     )
   }
 
+  // ── Success ───────────────────────────────────────────────────────────────
   if (success) {
     return (
-      <div style={styles.successWrap}>
-        <div style={styles.successBox}>
-          <div style={{ fontSize: '40px', marginBottom: '16px' }}>✅</div>
-          <h2 style={styles.successTitle}>Job Submitted</h2>
-          <p style={styles.successText}>
-            Your listing has been received and is pending review. Once approved, it will
-            appear on the jobs page. This usually takes no more than 24 hours.
+      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#f0fdf4,#dcfce7,#bbf7d0)', padding:24, fontFamily:"'Outfit',sans-serif" }}>
+        <style>{CSS}</style>
+        <div style={{ background:'#fff', borderRadius:24, padding:'48px 36px', maxWidth:480, textAlign:'center', border:'1.5px solid #dcfce7', boxShadow:'0 8px 32px rgba(22,163,74,0.1)' }}>
+          <div style={{ fontSize:52, marginBottom:16 }}>✅</div>
+          <h2 style={{ fontSize:22, fontWeight:900, color:'#14532d', margin:'0 0 12px' }}>Job Submitted</h2>
+          <p style={{ fontSize:15, color:'#4b6358', lineHeight:1.7, margin:'0 0 28px' }}>
+            Your listing has been received and is pending review. Once approved, it will appear on the jobs page. This usually takes no more than 24 hours.
           </p>
-          <Link to="/employer/dashboard" style={styles.dashboardBtn}>Go to Dashboard</Link>
+          <Link to="/employer/dashboard" style={{ display:'inline-block', padding:'13px 32px', background:'#16a34a', color:'#fff', borderRadius:50, fontWeight:700, fontSize:15, textDecoration:'none', fontFamily:"'Outfit',sans-serif", boxShadow:'0 4px 12px rgba(22,163,74,0.28)' }}>
+            Go to Dashboard
+          </Link>
         </div>
       </div>
     )
@@ -194,70 +302,66 @@ export default function PostJob() {
     acc[skill.category].push(skill)
     return acc
   }, {})
+  const skilledCategories   = Object.entries(grouped).filter(([cat]) => cat !== 'General Labour')
+  const unskilledCategories = Object.entries(grouped).filter(([cat]) => cat === 'General Labour')
 
-  const skilledCategories = Object.entries(grouped).filter(
-    ([category]) => category !== 'General Labour'
-  )
-  const unskilledCategories = Object.entries(grouped).filter(
-    ([category]) => category === 'General Labour'
-  )
+  const twoCol = { display:'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap:'0 24px' }
 
   return (
-    <div style={styles.page}>
-      <div style={{ maxWidth: isDesktop ? '860px' : '600px', margin: '0 auto' }}>
-        <h1 style={styles.title}>Post a Job</h1>
-        <p style={styles.subtitle}>
-          Fill in the job details below. Your organisation information is already attached
-          to your account — you do not need to enter it again.
-          Fields marked * are required.
-        </p>
+    <div style={{ minHeight:'100vh', background:'#f0fdf4', padding:'40px 24px', fontFamily:"'Outfit',sans-serif" }}>
+      <style>{CSS}</style>
 
-        {/* Employer profile summary card */}
+      <div style={{ maxWidth: isDesktop ? 900 : 600, margin:'0 auto' }}>
+
+        {/* Page heading */}
+        <div style={{ marginBottom:24 }}>
+          <h1 style={{ fontSize:'clamp(22px,3vw,32px)', fontWeight:900, color:'#14532d', margin:'0 0 8px' }}>Post a Job</h1>
+          <p style={{ fontSize:15, color:'#4b6358', lineHeight:1.65, margin:0 }}>
+            Fill in the job details below. Your organisation information is already attached to your account. Fields marked * are required.
+          </p>
+        </div>
+
+        {/* Employer profile card */}
         {employerProfile && (
-          <div style={styles.profileCard}>
-            <div style={styles.profileCardLeft}>
+          <div style={{ background:'#fff', border:'1.5px solid #dcfce7', borderRadius:16, padding:'14px 18px', marginBottom:24, display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
               {employerProfile.logo_url ? (
-                <img src={employerProfile.logo_url} alt="logo" style={styles.profileLogo} />
+                <img src={employerProfile.logo_url} alt="logo" style={{ width:44, height:44, borderRadius:10, objectFit:'contain', border:'1.5px solid #dcfce7' }} />
               ) : (
-                <div style={styles.profileInitial}>
+                <div style={{ width:44, height:44, borderRadius:10, background:'linear-gradient(135deg,#16a34a,#22c55e)', color:'#fff', fontSize:18, fontWeight:900, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                   {employerProfile.organization_name?.[0]?.toUpperCase() || '?'}
                 </div>
               )}
               <div>
-                <p style={styles.profileName}>{employerProfile.organization_name}</p>
-                <p style={styles.profileMeta}>
-                  {[employerProfile.contact_person, employerProfile.lga, employerProfile.industry]
-                    .filter(Boolean).join(' · ')}
+                <p style={{ fontSize:14, fontWeight:800, color:'#14532d', margin:0 }}>{employerProfile.organization_name}</p>
+                <p style={{ fontSize:12, color:'#9ca3af', margin:'2px 0 0' }}>
+                  {[employerProfile.contact_person, employerProfile.lga, employerProfile.industry].filter(Boolean).join(' · ')}
                 </p>
               </div>
             </div>
-            <Link to="/employer/dashboard" style={styles.profileEditLink}>Edit profile</Link>
+            <Link to="/employer/dashboard" style={{ fontSize:13, color:'#16a34a', fontWeight:700, textDecoration:'none' }}>Edit profile</Link>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
+        <form onSubmit={handleSubmit} style={{ background:'#fff', borderRadius:24, padding: isDesktop ? '36px 40px' : '28px 24px', border:'1.5px solid #dcfce7', boxShadow:'0 4px 20px rgba(22,163,74,0.07)' }}>
 
-          {/* Labour type selector */}
-          <div style={styles.field}>
-            <label style={styles.label}>What type of position is this? *</label>
-            <p style={styles.fieldHint}>This determines what information we collect about the role.</p>
-            <div style={styles.labourTypeRow}>
-              {[
-                { value: 'skilled', label: '🛠 Skilled', desc: 'Requires a specific skill or trade' },
-                { value: 'unskilled', label: '💪 Unskilled', desc: 'General or physical labour, no specific skill needed' },
-                { value: 'internship', label: '🎓 Internship / IT / SIWES', desc: 'Student industrial attachment or placement' },
-              ].map(option => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleLabourTypeChange(option.value)}
+          {/* ── LABOUR TYPE ─────────────────────────────────────────────── */}
+          <div style={{ marginBottom:28 }}>
+            <FieldLabel required>What type of position is this?</FieldLabel>
+            <p style={{ fontSize:13, color:'#9ca3af', margin:'0 0 14px' }}>This determines what information we collect about the role.</p>
+            <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+              {LABOUR_OPTIONS.map(opt => (
+                <button key={opt.value} type="button" onClick={() => handleLabourTypeChange(opt.value)}
                   style={{
-                    ...styles.labourTypeBtn,
-                    ...(labourType === option.value ? styles.labourTypeBtnActive : {})
-                  }}
-                >
-                  <span style={styles.labourTypeBtnLabel}>{option.label}</span>
-                  <span style={styles.labourTypeBtnDesc}>{option.desc}</span>
+                    flex:'1', minWidth:160, padding:'16px 14px', borderRadius:16,
+                    border:`2px solid ${labourType === opt.value ? '#16a34a' : '#dcfce7'}`,
+                    background: labourType === opt.value ? '#dcfce7' : '#f0fdf4',
+                    cursor:'pointer', textAlign:'left', display:'flex', flexDirection:'column', gap:5,
+                    transition:'all 0.15s', fontFamily:"'Outfit',sans-serif",
+                  }}>
+                  <span style={{ fontSize:20 }}>{opt.emoji}</span>
+                  <span style={{ fontSize:14, fontWeight:800, color: labourType === opt.value ? '#14532d' : '#4b6358' }}>{opt.label}</span>
+                  <span style={{ fontSize:12, color:'#9ca3af', lineHeight:1.4 }}>{opt.desc}</span>
                 </button>
               ))}
             </div>
@@ -265,99 +369,69 @@ export default function PostJob() {
 
           {labourType && (
             <>
-              <h3 style={styles.sectionHeader}>Job Details</h3>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
-                gap: '0 24px',
-              }}>
-                <div style={styles.field}>
-                  <label style={styles.label}>Job Title *</label>
-                  <input
-                    style={styles.input}
-                    type="text"
-                    name="job_title"
-                    value={form.job_title}
-                    onChange={handleChange}
+              {/* ── JOB DETAILS ───────────────────────────────────────── */}
+              <SectionHeader>Job Details</SectionHeader>
+              <div style={twoCol}>
+                <div style={{ marginBottom:20 }}>
+                  <FieldLabel required>Job Title</FieldLabel>
+                  <input className="oj-input" type="text" name="job_title" value={form.job_title} onChange={handleChange}
                     placeholder={
-                      labourType === 'skilled' ? 'e.g. Electrician, Welder, Farm Supervisor' :
-                      labourType === 'unskilled' ? 'e.g. Farm Hand, Security Watchman' :
+                      labourType === 'skilled'    ? 'e.g. Electrician, Welder, Farm Supervisor' :
+                      labourType === 'unskilled'  ? 'e.g. Farm Hand, Security Watchman' :
                       'e.g. IT Student Placement — Accounting Department'
                     }
                   />
                 </div>
 
                 {labourType !== 'internship' && (
-                  <div style={styles.field}>
-                    <label style={styles.label}>Job Type *</label>
-                    <select style={styles.input} name="job_type" value={form.job_type} onChange={handleChange}>
+                  <div style={{ marginBottom:20 }}>
+                    <FieldLabel required>Job Type</FieldLabel>
+                    <select className="oj-input" name="job_type" value={form.job_type} onChange={handleChange}>
                       <option value="">Select job type</option>
-                      {JOB_TYPES.map(type => (
-                        <option key={type.value} value={type.value}>{type.label}</option>
-                      ))}
+                      {JOB_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
                 )}
 
-                <div style={styles.field}>
-                  <label style={styles.label}>Job Location</label>
-                  <input style={styles.input} type="text" name="location" value={form.location} onChange={handleChange} placeholder="e.g. Saki, Iseyin" />
+                <div style={{ marginBottom:20 }}>
+                  <FieldLabel>Job Location</FieldLabel>
+                  <input className="oj-input" type="text" name="location" value={form.location} onChange={handleChange} placeholder="e.g. Saki, Iseyin" />
                 </div>
 
-                <div style={styles.field}>
-                  <label style={styles.label}>Local Government Area</label>
-                  <select style={styles.input} name="lga" value={form.lga} onChange={handleChange}>
+                <div style={{ marginBottom:20 }}>
+                  <FieldLabel>Local Government Area</FieldLabel>
+                  <select className="oj-input" name="lga" value={form.lga} onChange={handleChange}>
                     <option value="">Select LGA</option>
-                    {LGAs.map(lga => (
-                      <option key={lga} value={lga}>{lga}</option>
-                    ))}
+                    {LGAs.map(lga => <option key={lga} value={lga}>{lga}</option>)}
                   </select>
                 </div>
-
-                {labourType !== 'internship' && (
-                  <div style={styles.field}>
-                    <label style={styles.label}>Application Method *</label>
-                    <select style={styles.input} name="application_method" value={form.application_method} onChange={handleChange}>
-                      <option value="">Select application method</option>
-                      <option value="phone">Phone Call</option>
-                      <option value="whatsapp">WhatsApp</option>
-                    </select>
-                  </div>
-                )}
               </div>
 
+              {/* ── INTERNSHIP DETAILS ────────────────────────────────── */}
               {labourType === 'internship' && (
                 <>
-                  <h3 style={styles.sectionHeader}>Internship / SIWES Details</h3>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
-                    gap: '0 24px',
-                  }}>
-                    <div style={styles.field}>
-                      <label style={styles.label}>Department / Unit</label>
-                      <input style={styles.input} type="text" name="department_unit" value={form.department_unit} onChange={handleChange} placeholder="e.g. Accounts, ICT, Admin" />
+                  <SectionHeader>Internship / SIWES Details</SectionHeader>
+                  <div style={twoCol}>
+                    <div style={{ marginBottom:20 }}>
+                      <FieldLabel>Department / Unit</FieldLabel>
+                      <input className="oj-input" type="text" name="department_unit" value={form.department_unit} onChange={handleChange} placeholder="e.g. Accounts, ICT, Admin" />
                     </div>
-
-                    <div style={styles.field}>
-                      <label style={styles.label}>Duration</label>
-                      <input style={styles.input} type="text" name="duration" value={form.duration} onChange={handleChange} placeholder="e.g. 3 months, 6 months" />
+                    <div style={{ marginBottom:20 }}>
+                      <FieldLabel>Duration</FieldLabel>
+                      <input className="oj-input" type="text" name="duration" value={form.duration} onChange={handleChange} placeholder="e.g. 3 months, 6 months" />
                     </div>
-
-                    <div style={styles.field}>
-                      <label style={styles.label}>Stipend Available?</label>
-                      <select style={styles.input} name="stipend_available" value={form.stipend_available} onChange={handleChange}>
+                    <div style={{ marginBottom:20 }}>
+                      <FieldLabel>Stipend Available?</FieldLabel>
+                      <select className="oj-input" name="stipend_available" value={form.stipend_available} onChange={handleChange}>
                         <option value="">Select option</option>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                         <option value="Negotiable">Negotiable</option>
                       </select>
                     </div>
-
-                    <div style={styles.field}>
-                      <label style={styles.label}>SIWES Accredited?</label>
-                      <select style={styles.input} name="siwes_accredited" value={form.siwes_accredited} onChange={handleChange}>
+                    <div style={{ marginBottom:20 }}>
+                      <FieldLabel>SIWES Accredited?</FieldLabel>
+                      <select className="oj-input" name="siwes_accredited" value={form.siwes_accredited} onChange={handleChange}>
                         <option value="">Select option</option>
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
@@ -368,10 +442,12 @@ export default function PostJob() {
                 </>
               )}
 
-              <div style={styles.field}>
-                <label style={styles.label}>Job Description *</label>
+              {/* ── JOB DESCRIPTION ──────────────────────────────────── */}
+              <div style={{ marginBottom:20 }}>
+                <FieldLabel required>Job Description</FieldLabel>
                 <textarea
-                  style={{ ...styles.input, height: '120px', resize: 'vertical' }}
+                  className="oj-input"
+                  style={{ height:120, resize:'vertical' }}
                   name="job_description"
                   value={form.job_description}
                   onChange={handleChange}
@@ -383,134 +459,79 @@ export default function PostJob() {
                 />
               </div>
 
-              {labourType === 'skilled' && (
-                <div style={styles.field}>
-                  <label style={styles.label}>Skills Required — select all that apply</label>
-                  {skilledCategories.map(([category, categorySkills]) => (
-                    <div key={category} style={styles.skillGroup}>
-                      <p style={styles.skillCategory}>{category}</p>
-                      <div style={styles.skillGrid}>
-                        {categorySkills.map(skill => (
-                          <button
-                            key={skill.id}
-                            type="button"
-                            onClick={() => handleSkillToggle(skill.id)}
-                            style={{
-                              ...styles.skillBtn,
-                              ...(form.selectedSkills.includes(skill.id) ? styles.skillBtnActive : {})
-                            }}
-                          >
-                            {skill.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+              {/* ── APPLICATION METHOD ───────────────────────────────── */}
+              {labourType !== 'internship' && (
+                <div style={{ marginBottom:24 }}>
+                  <FieldLabel required>How should seekers apply?</FieldLabel>
+                  <p style={{ fontSize:13, color:'#9ca3af', margin:'0 0 14px' }}>
+                    Platform applications are tracked in your dashboard. WhatsApp connects seekers directly to you.
+                  </p>
+                  <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+                    {APPLICATION_METHODS.map(opt => (
+                      <button key={opt.value} type="button"
+                        onClick={() => setForm(prev => ({ ...prev, application_method: opt.value }))}
+                        style={{
+                          flex:'1', minWidth:140, padding:'14px 12px', borderRadius:14,
+                          border:`2px solid ${form.application_method === opt.value ? '#16a34a' : '#dcfce7'}`,
+                          background: form.application_method === opt.value ? '#dcfce7' : '#f0fdf4',
+                          cursor:'pointer', textAlign:'left', display:'flex', flexDirection:'column', gap:4,
+                          transition:'all 0.15s', fontFamily:"'Outfit',sans-serif",
+                        }}>
+                        <span style={{ fontSize:13, fontWeight:800, color: form.application_method === opt.value ? '#14532d' : '#4b6358' }}>{opt.label}</span>
+                        <span style={{ fontSize:12, color:'#9ca3af', lineHeight:1.4 }}>{opt.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {/* ── SKILLS ───────────────────────────────────────────── */}
+              {labourType === 'skilled' && (
+                <SkillsSection
+                  categories={skilledCategories}
+                  selectedSkills={form.selectedSkills}
+                  onToggle={handleSkillToggle}
+                  customSkills={customSkills}
+                  onCustomChange={handleCustomSkillChange}
+                  label="Skills Required — select all that apply"
+                />
               )}
 
               {labourType === 'unskilled' && (
-                <div style={styles.field}>
-                  <label style={styles.label}>Type of Labour Required — select all that apply</label>
-                  {unskilledCategories.map(([category, categorySkills]) => (
-                    <div key={category} style={styles.skillGroup}>
-                      <div style={styles.skillGrid}>
-                        {categorySkills.map(skill => (
-                          <button
-                            key={skill.id}
-                            type="button"
-                            onClick={() => handleSkillToggle(skill.id)}
-                            style={{
-                              ...styles.skillBtn,
-                              ...(form.selectedSkills.includes(skill.id) ? styles.skillBtnActive : {})
-                            }}
-                          >
-                            {skill.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <SkillsSection
+                  categories={unskilledCategories}
+                  selectedSkills={form.selectedSkills}
+                  onToggle={handleSkillToggle}
+                  customSkills={customSkills}
+                  onCustomChange={handleCustomSkillChange}
+                  label="Type of Labour Required — select all that apply"
+                />
               )}
 
               {labourType === 'internship' && (
-                <div style={styles.field}>
-                  <label style={styles.label}>Relevant Skills or Departments — select all that apply (optional)</label>
-                  {skilledCategories.map(([category, categorySkills]) => (
-                    <div key={category} style={styles.skillGroup}>
-                      <p style={styles.skillCategory}>{category}</p>
-                      <div style={styles.skillGrid}>
-                        {categorySkills.map(skill => (
-                          <button
-                            key={skill.id}
-                            type="button"
-                            onClick={() => handleSkillToggle(skill.id)}
-                            style={{
-                              ...styles.skillBtn,
-                              ...(form.selectedSkills.includes(skill.id) ? styles.skillBtnActive : {})
-                            }}
-                          >
-                            {skill.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                <SkillsSection
+                  categories={skilledCategories}
+                  selectedSkills={form.selectedSkills}
+                  onToggle={handleSkillToggle}
+                  customSkills={customSkills}
+                  onCustomChange={handleCustomSkillChange}
+                  label="Relevant Skills or Departments — select all that apply (optional)"
+                />
+              )}
+
+              {error && (
+                <div style={{ background:'#fee2e2', color:'#dc2626', fontSize:13, padding:'11px 14px', borderRadius:12, marginBottom:20, fontWeight:600 }}>
+                  {error}
                 </div>
               )}
 
-              {error && <p style={styles.error}>{error}</p>}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                style={{ ...styles.submitBtn, ...(submitting ? styles.submitBtnDisabled : {}) }}
-              >
+              <button type="submit" disabled={submitting} className="oj-submit-btn">
                 {submitting ? 'Submitting...' : 'Submit Job Listing'}
               </button>
             </>
           )}
-
         </form>
       </div>
     </div>
   )
-}
-
-const styles = {
-  page: { minHeight: '100vh', backgroundColor: '#f5f7f5', padding: '40px 24px' },
-  title: { fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '8px' },
-  subtitle: { fontSize: '14px', color: '#555', marginBottom: '24px', lineHeight: '1.6' },
-  profileCard: { backgroundColor: '#fff', border: '1px solid #e0ede6', borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' },
-  profileCardLeft: { display: 'flex', alignItems: 'center', gap: '12px' },
-  profileLogo: { width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #ddd' },
-  profileInitial: { width: '44px', height: '44px', borderRadius: '8px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  profileName: { fontSize: '14px', fontWeight: '700', color: '#222', margin: 0 },
-  profileMeta: { fontSize: '12px', color: '#888', margin: '2px 0 0 0' },
-  profileEditLink: { fontSize: '13px', color: '#1a6b3c', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap' },
-  form: { backgroundColor: '#fff', borderRadius: '12px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
-  sectionHeader: { fontSize: '16px', fontWeight: '700', color: '#1a6b3c', marginBottom: '16px', marginTop: '24px', paddingBottom: '8px', borderBottom: '2px solid #e8f5ee' },
-  field: { marginBottom: '20px' },
-  fieldHint: { fontSize: '13px', color: '#888', marginBottom: '10px', marginTop: '-2px' },
-  label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '6px' },
-  input: { width: '100%', padding: '10px 12px', fontSize: '14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box', outline: 'none' },
-  labourTypeRow: { display: 'flex', gap: '12px', flexWrap: 'wrap' },
-  labourTypeBtn: { flex: '1', minWidth: '160px', padding: '16px', borderRadius: '10px', border: '2px solid #ddd', backgroundColor: '#fafafa', cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '4px' },
-  labourTypeBtnActive: { borderColor: '#1a6b3c', backgroundColor: '#e8f5ee' },
-  labourTypeBtnLabel: { fontSize: '14px', fontWeight: '700', color: '#222' },
-  labourTypeBtnDesc: { fontSize: '12px', color: '#666', lineHeight: '1.4' },
-  skillGroup: { marginBottom: '12px' },
-  skillCategory: { fontSize: '12px', fontWeight: '700', color: '#888', textTransform: 'uppercase', marginBottom: '6px' },
-  skillGrid: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-  skillBtn: { padding: '6px 12px', fontSize: '13px', borderRadius: '20px', border: '1px solid #ddd', backgroundColor: '#f9f9f9', cursor: 'pointer', color: '#333' },
-  skillBtnActive: { backgroundColor: '#1a6b3c', color: '#fff', borderColor: '#1a6b3c' },
-  error: { color: '#e53e3e', fontSize: '13px', marginBottom: '12px' },
-  submitBtn: { width: '100%', padding: '14px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '16px', fontWeight: '600', border: 'none', borderRadius: '8px', cursor: 'pointer', marginTop: '8px' },
-  submitBtnDisabled: { backgroundColor: '#aaa', cursor: 'not-allowed' },
-  successWrap: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f7f5', padding: '24px' },
-  successBox: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px 32px', maxWidth: '480px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
-  successTitle: { fontSize: '22px', fontWeight: 'bold', color: '#1a6b3c', marginBottom: '12px' },
-  successText: { fontSize: '15px', color: '#555', lineHeight: '1.6', marginBottom: '24px' },
-  dashboardBtn: { display: 'inline-block', padding: '12px 28px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '15px', fontWeight: '600', borderRadius: '8px', textDecoration: 'none' },
 }
