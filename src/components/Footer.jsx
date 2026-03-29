@@ -42,7 +42,7 @@ export default function Footer() {
 
   return (
     <footer style={{
-      background: 'linear-gradient(180deg, #14532d 0%, #0f3d21 100%)',
+      background: '#0a0a0a',
       padding: '56px 24px 28px',
       fontFamily: "'Outfit', sans-serif",
     }}>
