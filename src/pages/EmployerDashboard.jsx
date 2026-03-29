@@ -92,6 +92,169 @@ function DetailRow({ label, value }) {
   )
 }
 
+// ─── Employer Profile Tab — view + inline edit ────────────────────────────────
+function EmployerProfileTab({ employerProfile, logoUploading, logoError, handleLogoChange, refreshEmployerProfile, isDesktop }) {
+  const [editing, setEditing]       = useState(false)
+  const [saving, setSaving]         = useState(false)
+  const [saveError, setSaveError]   = useState('')
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [editForm, setEditForm]     = useState({
+    contact_person:  employerProfile.contact_person  || '',
+    phone_number:    employerProfile.phone_number    || '',
+    whatsapp_number: employerProfile.whatsapp_number || '',
+  })
+
+  function handleChange(e) {
+    const { name, value } = e.target
+    setEditForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  async function handleSave(e) {
+    e.preventDefault()
+    setSaveError(''); setSaveSuccess(false)
+    if (!editForm.contact_person || !editForm.phone_number) {
+      setSaveError('Contact person and phone number are required.')
+      return
+    }
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('employers')
+        .update({
+          contact_person:  editForm.contact_person.trim(),
+          phone_number:    editForm.phone_number.trim(),
+          whatsapp_number: editForm.whatsapp_number.trim() || null,
+        })
+        .eq('id', employerProfile.id)
+      if (error) throw error
+      if (refreshEmployerProfile) await refreshEmployerProfile()
+      setSaveSuccess(true)
+      setEditing(false)
+    } catch {
+      setSaveError('Could not save changes. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputStyle = {
+    width:'100%', padding:'11px 14px', fontSize:14,
+    fontFamily:"'Outfit',sans-serif",
+    border:'1.5px solid #dcfce7', borderRadius:12,
+    background:'#f0fdf4', color:'#14532d', outline:'none',
+    transition:'border 0.15s, box-shadow 0.15s',
+  }
+
+  return (
+    <div className="oj-detail-card" style={{ maxWidth: isDesktop ? 560 : '100%' }}>
+
+      {/* Logo section */}
+      <div style={{ display:'flex', alignItems:'center', gap:18, marginBottom:24 }}>
+        <div style={{ position:'relative', flexShrink:0 }}>
+          {employerProfile.logo_url ? (
+            <img src={employerProfile.logo_url} alt="Logo"
+              style={{ width:72, height:72, borderRadius:14, objectFit:'contain', border:'1.5px solid #dcfce7', display:'block' }} />
+          ) : (
+            <div style={{ width:72, height:72, borderRadius:14, background:'linear-gradient(135deg,#16a34a,#22c55e)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:900, color:'#fff' }}>
+              {employerProfile.organization_name?.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <label style={{ position:'absolute', bottom:-4, right:-4, width:26, height:26, borderRadius:'50%', background:'#fff', border:'1.5px solid #dcfce7', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:12, boxShadow:'0 2px 6px rgba(0,0,0,0.1)' }}
+            title={logoUploading ? 'Uploading...' : 'Upload logo'}>
+            {logoUploading ? '⏳' : '📷'}
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoChange} style={{ display:'none' }} disabled={logoUploading} />
+          </label>
+        </div>
+        <div>
+          <p style={{ fontSize:13, color:'#4b6358', margin:0, lineHeight:1.5 }}>
+            Upload your organisation logo (JPG, PNG or WebP, max 2MB)
+          </p>
+          {logoError && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{logoError}</p>}
+        </div>
+      </div>
+
+      <h3 style={{ fontSize:15, fontWeight:800, color:'#16a34a', margin:'0 0 20px', paddingBottom:10, borderBottom:'2px solid #dcfce7' }}>
+        Employer Details
+      </h3>
+
+      {saveSuccess && (
+        <div style={{ background:'#dcfce7', color:'#166534', fontSize:13, padding:'11px 14px', borderRadius:12, marginBottom:20, fontWeight:700, border:'1px solid #bbf7d0' }}>
+          ✓ Details updated successfully.
+        </div>
+      )}
+
+      {/* Read-only fields */}
+      <DetailRow label="Organisation"    value={employerProfile.organization_name} />
+      <DetailRow label="Email"           value={employerProfile.email} />
+      <DetailRow label="LGA"             value={employerProfile.lga} />
+      <DetailRow label="Industry"        value={employerProfile.industry} />
+      <DetailRow label="About"           value={employerProfile.description} />
+      <DetailRow label="Business Type"   value={employerProfile.business_type} />
+      <DetailRow label="CAC Number"      value={employerProfile.cac_number} />
+      <DetailRow label="Year Registered" value={employerProfile.year_registered} />
+      <DetailRow label="Account Status"  value={employerProfile.status === 'approved' ? '✓ Active' : '⏳ Pending Review'} />
+
+      {/* Editable fields — view mode */}
+      {!editing && (
+        <>
+          <div style={{ height:1, background:'#dcfce7', margin:'16px 0' }} />
+          <DetailRow label="Contact Person"  value={employerProfile.contact_person} />
+          <DetailRow label="Phone Number"    value={employerProfile.phone_number} />
+          <DetailRow label="WhatsApp Number" value={employerProfile.whatsapp_number} />
+          <div style={{ marginTop:20, display:'flex', gap:12, flexWrap:'wrap' }}>
+            <button
+              onClick={() => { setEditing(true); setSaveSuccess(false) }}
+              style={{ padding:'10px 24px', background:'#fff', color:'#16a34a', border:'2px solid #16a34a', borderRadius:50, fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:"'Outfit',sans-serif" }}>
+              Edit Contact Details
+            </button>
+          </div>
+          <p style={{ fontSize:13, color:'#9ca3af', marginTop:14, lineHeight:1.5 }}>
+            To update your organisation name, LGA, industry, or CAC details, contact us via WhatsApp.
+          </p>
+        </>
+      )}
+
+      {/* Editable fields — edit mode */}
+      {editing && (
+        <form onSubmit={handleSave}>
+          <div style={{ height:1, background:'#dcfce7', margin:'16px 0 20px' }} />
+          <h4 style={{ fontSize:14, fontWeight:800, color:'#14532d', margin:'0 0 16px' }}>Edit Contact Details</h4>
+
+          <div style={{ marginBottom:18 }}>
+            <label style={{ display:'block', fontSize:13, fontWeight:700, color:'#166634', marginBottom:7 }}>Contact Person *</label>
+            <input style={inputStyle} type="text" name="contact_person" value={editForm.contact_person} onChange={handleChange} placeholder="Full name of contact" />
+          </div>
+          <div style={{ marginBottom:18 }}>
+            <label style={{ display:'block', fontSize:13, fontWeight:700, color:'#166634', marginBottom:7 }}>Phone Number *</label>
+            <input style={inputStyle} type="tel" name="phone_number" value={editForm.phone_number} onChange={handleChange} placeholder="e.g. 08012345678" />
+          </div>
+          <div style={{ marginBottom:20 }}>
+            <label style={{ display:'block', fontSize:13, fontWeight:700, color:'#166634', marginBottom:7 }}>WhatsApp Number</label>
+            <input style={inputStyle} type="tel" name="whatsapp_number" value={editForm.whatsapp_number} onChange={handleChange} placeholder="e.g. 08012345678 (if different from phone)" />
+          </div>
+
+          {saveError && (
+            <div style={{ background:'#fee2e2', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16, fontWeight:600 }}>
+              {saveError}
+            </div>
+          )}
+
+          <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+            <button type="submit" disabled={saving}
+              style={{ padding:'11px 28px', background: saving ? '#9ca3af' : '#16a34a', color:'#fff', border:'none', borderRadius:50, fontWeight:700, fontSize:14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily:"'Outfit',sans-serif", boxShadow: saving ? 'none' : '0 4px 12px rgba(22,163,74,0.25)' }}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button type="button" onClick={() => { setEditing(false); setSaveError('') }}
+              style={{ padding:'11px 24px', background:'transparent', color:'#4b6358', border:'1.5px solid #dcfce7', borderRadius:50, fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:"'Outfit',sans-serif" }}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
 export default function EmployerDashboard() {
   const { employer, employerProfile, employerLoading, employerSignOut, refreshEmployerProfile } = useEmployerAuth()
   const navigate   = useNavigate()
@@ -332,56 +495,14 @@ export default function EmployerDashboard() {
 
         {/* ── PROFILE TAB ───────────────────────────────────────────────── */}
         {activeTab === 'profile' && (
-          <div className="oj-detail-card" style={{ maxWidth: isDesktop ? 560 : '100%' }}>
-
-            {/* Logo section */}
-            <div style={{ display:'flex', alignItems:'center', gap:18, marginBottom:24 }}>
-              <div style={{ position:'relative', flexShrink:0 }}>
-                {employerProfile.logo_url ? (
-                  <img src={employerProfile.logo_url} alt="Logo"
-                    style={{ width:72, height:72, borderRadius:14, objectFit:'contain', border:'1.5px solid #dcfce7', display:'block' }} />
-                ) : (
-                  <div style={{ width:72, height:72, borderRadius:14, background:'linear-gradient(135deg,#16a34a,#22c55e)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:900, color:'#fff' }}>
-                    {employerProfile.organization_name?.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <label style={{ position:'absolute', bottom:-4, right:-4, width:26, height:26, borderRadius:'50%', background:'#fff', border:'1.5px solid #dcfce7', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:12, boxShadow:'0 2px 6px rgba(0,0,0,0.1)' }}
-                  title={logoUploading ? 'Uploading...' : 'Upload logo'}>
-                  {logoUploading ? '⏳' : '📷'}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoChange} style={{ display:'none' }} disabled={logoUploading} />
-                </label>
-              </div>
-              <div>
-                <p style={{ fontSize:13, color:'#4b6358', margin:0, lineHeight:1.5 }}>
-                  Upload your organisation logo (JPG, PNG or WebP, max 2MB)
-                </p>
-                {logoError && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{logoError}</p>}
-              </div>
-            </div>
-
-            <h3 style={{ fontSize:15, fontWeight:800, color:'#16a34a', margin:'0 0 20px', paddingBottom:10, borderBottom:'2px solid #dcfce7' }}>
-              Employer Details
-            </h3>
-
-            <DetailRow label="Organisation"   value={employerProfile.organization_name} />
-            <DetailRow label="Contact Person" value={employerProfile.contact_person} />
-            <DetailRow label="Phone"          value={employerProfile.phone_number} />
-            <DetailRow label="Email"          value={employerProfile.email} />
-            <DetailRow label="LGA"            value={employerProfile.lga} />
-            <DetailRow label="Industry"       value={employerProfile.industry} />
-            <DetailRow label="About"          value={employerProfile.description} />
-            <DetailRow label="Business Type"  value={employerProfile.business_type} />
-            <DetailRow label="CAC Number"     value={employerProfile.cac_number} />
-            <DetailRow label="Year Registered" value={employerProfile.year_registered} />
-            <DetailRow
-              label="Account Status"
-              value={employerProfile.status === 'approved' ? '✓ Active' : '⏳ Pending Review'}
-            />
-
-            <p style={{ fontSize:13, color:'#9ca3af', marginTop:16, lineHeight:1.5 }}>
-              To update your organisation details, contact us via WhatsApp.
-            </p>
-          </div>
+          <EmployerProfileTab
+            employerProfile={employerProfile}
+            logoUploading={logoUploading}
+            logoError={logoError}
+            handleLogoChange={handleLogoChange}
+            refreshEmployerProfile={refreshEmployerProfile}
+            isDesktop={isDesktop}
+          />
         )}
 
       </div>
