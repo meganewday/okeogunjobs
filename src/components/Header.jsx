@@ -14,7 +14,6 @@ function useIsDesktop() {
   return isDesktop
 }
 
-// ─── Wordmark Logo ────────────────────────────────────────────────────────────
 function Wordmark() {
   return (
     <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
@@ -31,7 +30,6 @@ function Wordmark() {
   )
 }
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -69,6 +67,24 @@ const CSS = `
   }
   .oj-nav-link:hover { background: #dcfce7; color: #16a34a; }
   .oj-nav-link-active { background: #dcfce7 !important; color: #16a34a !important; font-weight: 700 !important; }
+
+  .oj-market-btn {
+    font-size: 13px;
+    color: #b45309;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    background: #fff8e1;
+    border: 1.5px solid #fde68a;
+    transition: background 0.15s, border-color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+  }
+  .oj-market-btn:hover { background: #fef3c7; border-color: #f5a623; }
 
   .oj-signup-btn {
     padding: 8px 20px;
@@ -164,6 +180,22 @@ const CSS = `
   .oj-mobile-link:hover { background: #f0fdf4; }
   .oj-mobile-link-active { background: #dcfce7 !important; color: #16a34a !important; }
 
+  .oj-mobile-market {
+    font-size: 15px;
+    color: #b45309;
+    text-decoration: none;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    background: #fff8e1;
+    border: 1.5px solid #fde68a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
   .oj-mobile-signup {
     display: block;
     margin: 10px 0 0;
@@ -228,7 +260,6 @@ const CSS = `
   }
 `
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled]  = useState(false)
@@ -238,20 +269,20 @@ export default function Header() {
   const { user, profile, signOut } = useAuth()
   const { employer, employerProfile, employerLoading, employerSignOut } = useEmployerAuth()
 
-  // Deepen the blur/shadow a little when page is scrolled
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handler)
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
-  // Close menu on route change
   useEffect(() => { setMenuOpen(false) }, [location.pathname])
 
   const baseLinks = [
     { to: '/',     label: 'Home' },
     { to: '/jobs', label: 'Browse Jobs' },
   ]
+
+  const marketUrl = 'https://market.okeogunjobs.com'
 
   async function handleSignOut() {
     setMenuOpen(false)
@@ -278,10 +309,9 @@ export default function Header() {
 
       <div className="oj-header-inner">
 
-        {/* Wordmark */}
         <Wordmark />
 
-        {/* ── DESKTOP NAV ───────────────────────────────────────────────── */}
+        {/* DESKTOP NAV */}
         {isDesktop && (
           <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {baseLinks.map(link => (
@@ -293,6 +323,18 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+
+            {/* Market — coming soon */}
+            <a
+              href={marketUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="oj-market-btn"
+              title="Coming soon"
+            >
+              🛒 Market
+              <span style={{ fontSize: '10px', fontWeight: '600', opacity: 0.7 }}>soon</span>
+            </a>
 
             {/* Employer logged in */}
             {!employerLoading && employer && (
@@ -352,7 +394,7 @@ export default function Header() {
           </nav>
         )}
 
-        {/* ── HAMBURGER — mobile ────────────────────────────────────────── */}
+        {/* HAMBURGER — mobile */}
         {!isDesktop && (
           <button
             className="oj-hamburger"
@@ -366,7 +408,7 @@ export default function Header() {
         )}
       </div>
 
-      {/* ── MOBILE MENU ───────────────────────────────────────────────────── */}
+      {/* MOBILE MENU */}
       {!isDesktop && menuOpen && (
         <div className="oj-mobile-menu">
           {baseLinks.map(link => (
@@ -379,6 +421,18 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+
+          {/* Market — coming soon */}
+          <a
+            href={marketUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="oj-mobile-market"
+            onClick={() => setMenuOpen(false)}
+          >
+            🛒 Market
+            <span style={{ fontSize: '11px', fontWeight: '600', opacity: 0.7 }}>Coming Soon</span>
+          </a>
 
           <hr className="oj-mobile-divider" />
 
