@@ -25,6 +25,8 @@ import EmployerApplications from './pages/EmployerApplications'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import FAQ from './pages/FAQ'
 import PwaInstallPrompt from './components/PwaInstallPrompt'
+import JobDetail from './pages/JobDetail';
+
 
 function Layout({ children }) {
   const location = useLocation()
@@ -68,6 +70,7 @@ function App() {
               <Route path="/employer/dashboard" element={<EmployerDashboard />} />
               <Route path="/employer/applications/:jobId" element={<EmployerApplications />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/jobs/:id" element={<JobDetail />} />
             </Routes>
           </Layout>
         </BrowserRouter>
