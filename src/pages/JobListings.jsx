@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { useAuth } from '../contexts/AuthContext'
 
+
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
   useEffect(() => {
@@ -308,6 +309,9 @@ export default function JobListings() {
         </div>
 
         {/* ── JOB CARDS ────────────────────────────────────────────────── */}
+      <Link to={`/jobs/${job.id}`} style={{ color: '#14532d', textDecoration: 'none', fontWeight: 700 }}>
+  {job.job_title}
+</Link>
         <div style={{ flex:1, width:'100%' }}>
           {loading ? (
             <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
