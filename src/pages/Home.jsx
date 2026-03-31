@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { Helmet } from 'react-helmet-async';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const STEPS = [
@@ -246,7 +247,11 @@ export default function Home() {
   return (
     <div style={{ fontFamily:"'Outfit','Segoe UI',sans-serif", background:'#f0fdf4', overflowX:'hidden' }}>
       <style>{CSS}</style>
-
+<Helmet>
+  <title>OkeOgunJobs — Oke-Ogun Job Bank | Find Jobs in Oke-Ogun</title>
+  <meta name="description" content="OkeOgunJobs connects Oke-Ogun indigenes to verified jobs across 10 LGAs in Oyo State. Browse job listings, register as a job seeker, or post a job today." />
+  <link rel="canonical" href="https://okeogunjobs.com/" />
+</Helmet>
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section style={{ background:'linear-gradient(135deg,#14532d 0%,#166534 45%,#15803d 100%)', padding:'64px 24px 52px', position:'relative', overflow:'hidden' }}>
         {/* Decorative circles */}
