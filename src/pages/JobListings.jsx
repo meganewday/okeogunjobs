@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { useAuth } from '../contexts/AuthContext'
-
+import { Helmet } from 'react-helmet-async';
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -116,6 +116,11 @@ function Skeleton() {
         <div style={{ height:24, background:'#f0fdf4', borderRadius:20, width:80 }} />
       </div>
     </div>
+    <Helmet>
+  <title>Browse Jobs in Oke-Ogun | OkeOgunJobs</title>
+  <meta name="description" content="Browse verified job listings across Saki, Iseyin, Itesiwaju, Kajola and all 10 LGAs of the Oke-Ogun zone. Filter by skill, location, and job type." />
+  <link rel="canonical" href="https://okeogunjobs.com/jobs" />
+</Helmet>
   )
 }
 
