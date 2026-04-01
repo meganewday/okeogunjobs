@@ -68,24 +68,6 @@ const CSS = `
   .oj-nav-link:hover { background: #dcfce7; color: #16a34a; }
   .oj-nav-link-active { background: #dcfce7 !important; color: #16a34a !important; font-weight: 700 !important; }
 
-  .oj-market-btn {
-    font-size: 13px;
-    color: #b45309;
-    text-decoration: none;
-    padding: 6px 14px;
-    border-radius: 50px;
-    font-weight: 700;
-    font-family: 'Outfit', sans-serif;
-    background: #fff8e1;
-    border: 1.5px solid #fde68a;
-    transition: background 0.15s, border-color 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-  }
-  .oj-market-btn:hover { background: #fef3c7; border-color: #f5a623; }
-
   .oj-signup-btn {
     padding: 8px 20px;
     background: #16a34a;
@@ -180,22 +162,6 @@ const CSS = `
   .oj-mobile-link:hover { background: #f0fdf4; }
   .oj-mobile-link-active { background: #dcfce7 !important; color: #16a34a !important; }
 
-  .oj-mobile-market {
-    font-size: 15px;
-    color: #b45309;
-    text-decoration: none;
-    padding: 12px 16px;
-    border-radius: 12px;
-    font-weight: 700;
-    font-family: 'Outfit', sans-serif;
-    background: #fff8e1;
-    border: 1.5px solid #fde68a;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 4px;
-  }
-
   .oj-mobile-signup {
     display: block;
     margin: 10px 0 0;
@@ -282,8 +248,6 @@ export default function Header() {
     { to: '/jobs', label: 'Browse Jobs' },
   ]
 
-  const marketUrl = 'https://market.okeogunjobs.com'
-
   async function handleSignOut() {
     setMenuOpen(false)
     await signOut()
@@ -308,7 +272,6 @@ export default function Header() {
       <style>{CSS}</style>
 
       <div className="oj-header-inner">
-
         <Wordmark />
 
         {/* DESKTOP NAV */}
@@ -323,18 +286,6 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
-
-            {/* Market — coming soon 
-            <a
-              href={marketUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="oj-market-btn"
-              title="Coming soon"
-            >
-              🛒 Market
-              <span style={{ fontSize: '10px', fontWeight: '600', opacity: 0.7 }}>soon</span>
-            </a> */}
 
             {/* Employer logged in */}
             {!employerLoading && employer && (
@@ -421,20 +372,6 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
-
-          {/* Market — coming soon 
-          <a
-            href={marketUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="oj-mobile-market"
-            onClick={() => setMenuOpen(false)}
-          >
-            🛒 Market
-            <span style={{ fontSize: '11px', fontWeight: '600', opacity: 0.7 }}>Coming Soon</span>
-          </a>
-
-          <hr className="oj-mobile-divider" />  */}
 
           {/* Employer logged in */}
           {!employerLoading && employer && (
