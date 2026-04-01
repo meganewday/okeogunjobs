@@ -324,7 +324,7 @@ export default function Header() {
               </Link>
             ))}
 
-            {/* Market — coming soon */}
+            {/* Market — coming soon 
             <a
               href={marketUrl}
               target="_blank"
@@ -334,7 +334,7 @@ export default function Header() {
             >
               🛒 Market
               <span style={{ fontSize: '10px', fontWeight: '600', opacity: 0.7 }}>soon</span>
-            </a>
+            </a> */}
 
             {/* Employer logged in */}
             {!employerLoading && employer && (
