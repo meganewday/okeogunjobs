@@ -422,7 +422,7 @@ export default function Header() {
             </Link>
           ))}
 
-          {/* Market — coming soon */}
+          {/* Market — coming soon 
           <a
             href={marketUrl}
             target="_blank"
@@ -434,7 +434,7 @@ export default function Header() {
             <span style={{ fontSize: '11px', fontWeight: '600', opacity: 0.7 }}>Coming Soon</span>
           </a>
 
-          <hr className="oj-mobile-divider" />
+          <hr className="oj-mobile-divider" />  */}
 
           {/* Employer logged in */}
           {!employerLoading && employer && (
