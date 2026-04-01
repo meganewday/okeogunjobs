@@ -251,6 +251,19 @@ export default function Home() {
   <title>OkeOgunJobs — Oke-Ogun Job Bank | Find Jobs in Oke-Ogun</title>
   <meta name="description" content="OkeOgunJobs connects Oke-Ogun indigenes to verified jobs across 10 LGAs in Oyo State. Browse job listings, register as a job seeker, or post a job today." />
   <link rel="canonical" href="https://okeogunjobs.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://okeogunjobs.com/" />
+  <meta property="og:title" content="OkeOgunJobs — Oke-Ogun Job Bank" />
+  <meta property="og:description" content="Find verified jobs across all 10 LGAs of Oke-Ogun, Oyo State. Free for job seekers. Employers post jobs and find local talent directly." />
+  <meta property="og:image" content="https://okeogunjobs.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="OkeOgunJobs" />
+  <meta property="og:locale" content="en_NG" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="OkeOgunJobs — Oke-Ogun Job Bank" />
+  <meta name="twitter:description" content="Find verified jobs across all 10 LGAs of Oke-Ogun, Oyo State. Free for job seekers." />
+  <meta name="twitter:image" content="https://okeogunjobs.com/og-image.png" />
 </Helmet>
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section style={{ background:'linear-gradient(135deg,#14532d 0%,#166534 45%,#15803d 100%)', padding:'64px 24px 52px', position:'relative', overflow:'hidden' }}>
