@@ -6,27 +6,37 @@ import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
 
 export default function AdminDashboard() {
   const [session, setSession] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [activeTab, setActiveTab] = useState('jobs')
   const [jobListings, setJobListings] = useState([])
   const [jobSeekers, setJobSeekers] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  const handleTimeout = useCallback(async () => {
-    await supabase.auth.signOut()
-    navigate('/admin/login?timeout=1')
-  }, [navigate])
-
-  useInactivityTimeout('admin', handleTimeout)
-
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         navigate('/admin/login')
-      } else {
-        setSession(session)
-        fetchData()
+        return
       }
+
+      // Verify user is in the admins table
+      const { data: adminRow } = await supabase
+        .from('admins')
+        .select('id, role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!adminRow) {
+        // Authenticated but not an admin — sign out and redirect
+        await supabase.auth.signOut()
+        navigate('/admin/login')
+        return
+      }
+
+      setSession(session)
+      setIsAdmin(true)
+      fetchData()
     })
   }, [])
 
@@ -39,7 +49,7 @@ export default function AdminDashboard() {
   async function fetchJobListings() {
     const { data } = await supabase
       .from('job_listings')
-      .select('*, employers(organization_name, contact_person, phone_number, email, cac_number, business_type, year_registered)')
+      .select('*, employers(organization_name, contact_person, phone_number, email)')
       .order('created_at', { ascending: false })
     if (data) setJobListings(data)
   }
@@ -70,15 +80,23 @@ export default function AdminDashboard() {
     if (!error) fetchJobSeekers()
   }
 
+  const handleTimeout = useCallback(async () => {
+    clearActivity('admin')
+    await supabase.auth.signOut()
+    navigate('/admin/login?timeout=1')
+  }, [navigate])
+
+  useInactivityTimeout('admin', handleTimeout)
+
   async function handleLogout() {
     clearActivity('admin')
     await supabase.auth.signOut()
     navigate('/admin/login')
   }
 
-  const pendingJobs = jobListings.filter(j => j.status === 'pending')
-  const approvedJobs = jobListings.filter(j => j.status === 'approved')
-  const pendingSeekers = jobSeekers.filter(s => s.status === 'pending')
+  const pendingJobs     = jobListings.filter(j => j.status === 'pending')
+  const approvedJobs    = jobListings.filter(j => j.status === 'approved')
+  const pendingSeekers  = jobSeekers.filter(s => s.status === 'pending')
   const approvedSeekers = jobSeekers.filter(s => s.status === 'approved')
 
   function statusBadge(status) {
@@ -104,14 +122,19 @@ export default function AdminDashboard() {
     )
   }
 
+  // Extra guard — should never reach here due to useEffect redirect
+  if (!isAdmin) return null
+
   return (
     <div style={styles.page}>
 
+      {/* Header */}
       <div style={styles.header}>
         <h1 style={styles.headerTitle}>{APP_NAME} Admin</h1>
         <button onClick={handleLogout} style={styles.logoutBtn}>Sign Out</button>
       </div>
 
+      {/* Stats */}
       <div style={styles.statsRow}>
         <div style={styles.statCard}>
           <p style={styles.statNumber}>{pendingJobs.length}</p>
@@ -131,6 +154,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Tabs */}
       <div style={styles.tabs}>
         <button
           onClick={() => setActiveTab('jobs')}
@@ -146,6 +170,7 @@ export default function AdminDashboard() {
         </button>
       </div>
 
+      {/* Job Listings Tab */}
       {activeTab === 'jobs' && (
         <div style={styles.list}>
           {jobListings.length === 0 && <p style={styles.empty}>No job listings yet.</p>}
@@ -165,12 +190,12 @@ export default function AdminDashboard() {
               <p style={styles.cardDetail}><strong>Application via:</strong> {job.application_method}</p>
               <p style={styles.cardDetail}><strong>Contact:</strong> {job.employers?.contact_person}</p>
               <p style={styles.cardDetail}><strong>Phone:</strong> {job.employers?.phone_number}</p>
-              {job.employers?.email && <p style={styles.cardDetail}><strong>Email:</strong> {job.employers.email}</p>}
-              {job.employers?.business_type && <p style={styles.cardDetail}><strong>Business Type:</strong> {job.employers.business_type}</p>}
-              {job.employers?.cac_number && <p style={styles.cardDetail}><strong>CAC Number:</strong> {job.employers.cac_number}</p>}
-              {job.employers?.year_registered && <p style={styles.cardDetail}><strong>Year Registered:</strong> {job.employers.year_registered}</p>}
+              {job.employers?.email && (
+                <p style={styles.cardDetail}><strong>Email:</strong> {job.employers.email}</p>
+              )}
               <p style={styles.cardDescription}>{job.job_description}</p>
               <p style={styles.cardDate}>Submitted: {new Date(job.created_at).toLocaleDateString()}</p>
+
               {job.status === 'pending' && (
                 <div style={styles.actionRow}>
                   <button onClick={() => updateJobStatus(job.id, 'approved')} style={styles.approveBtn}>Approve</button>
@@ -193,6 +218,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Job Seekers Tab */}
       {activeTab === 'seekers' && (
         <div style={styles.list}>
           {jobSeekers.length === 0 && <p style={styles.empty}>No job seekers yet.</p>}
@@ -215,12 +241,24 @@ export default function AdminDashboard() {
                 {statusBadge(seeker.status)}
               </div>
               <p style={styles.cardDetail}><strong>Phone:</strong> {seeker.phone_number}</p>
-              {seeker.whatsapp_number && <p style={styles.cardDetail}><strong>WhatsApp:</strong> {seeker.whatsapp_number}</p>}
-              {seeker.gender && <p style={styles.cardDetail}><strong>Gender:</strong> {seeker.gender}</p>}
-              {seeker.age_range && <p style={styles.cardDetail}><strong>Age Range:</strong> {seeker.age_range}</p>}
-              {seeker.education_level && <p style={styles.cardDetail}><strong>Education:</strong> {seeker.education_level.replace(/_/g, ' ')}</p>}
-              {seeker.years_of_experience > 0 && <p style={styles.cardDetail}><strong>Experience:</strong> {seeker.years_of_experience} year(s)</p>}
-              {seeker.location && <p style={styles.cardDetail}><strong>Location:</strong> {seeker.location}{seeker.ward ? `, ${seeker.ward}` : ''}</p>}
+              {seeker.whatsapp_number && (
+                <p style={styles.cardDetail}><strong>WhatsApp:</strong> {seeker.whatsapp_number}</p>
+              )}
+              {seeker.gender && (
+                <p style={styles.cardDetail}><strong>Gender:</strong> {seeker.gender}</p>
+              )}
+              {seeker.age_range && (
+                <p style={styles.cardDetail}><strong>Age Range:</strong> {seeker.age_range}</p>
+              )}
+              {seeker.education_level && (
+                <p style={styles.cardDetail}><strong>Education:</strong> {seeker.education_level.replace(/_/g, ' ')}</p>
+              )}
+              {seeker.years_of_experience > 0 && (
+                <p style={styles.cardDetail}><strong>Experience:</strong> {seeker.years_of_experience} year(s)</p>
+              )}
+              {seeker.location && (
+                <p style={styles.cardDetail}><strong>Location:</strong> {seeker.location}{seeker.ward ? `, ${seeker.ward}` : ''}</p>
+              )}
               {seeker.cv_url && (
                 <p style={styles.cardDetail}>
                   <strong>CV: </strong>
@@ -228,6 +266,7 @@ export default function AdminDashboard() {
                 </p>
               )}
               <p style={styles.cardDate}>Submitted: {new Date(seeker.created_at).toLocaleDateString()}</p>
+
               {seeker.status === 'pending' && (
                 <div style={styles.actionRow}>
                   <button onClick={() => updateSeekerStatus(seeker.id, 'approved')} style={styles.approveBtn}>Approve</button>
@@ -248,7 +287,6 @@ export default function AdminDashboard() {
           ))}
         </div>
       )}
-
     </div>
   )
 }
