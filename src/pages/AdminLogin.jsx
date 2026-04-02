@@ -15,14 +15,34 @@ export default function AdminLogin() {
     setError('')
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    // Step 1 — authenticate with Supabase
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-    if (error) {
+    if (authError || !authData?.user) {
       setError('Invalid email or password. Please try again.')
       setLoading(false)
       return
     }
 
+    // Step 2 — check if this user exists in the admins table
+    const { data: adminRow, error: adminError } = await supabase
+      .from('admins')
+      .select('id, role')
+      .eq('id', authData.user.id)
+      .single()
+
+    if (adminError || !adminRow) {
+      // Valid Supabase user but not an admin — sign them out and block
+      await supabase.auth.signOut()
+      setError('You do not have admin access.')
+      setLoading(false)
+      return
+    }
+
+    // Step 3 — confirmed admin, proceed
     navigate('/admin')
   }
 
