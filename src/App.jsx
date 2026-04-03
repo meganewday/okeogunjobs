@@ -22,11 +22,10 @@ import EmployerResetPassword from './pages/EmployerResetPassword'
 import EmployerUpdatePassword from './pages/EmployerUpdatePassword'
 import EmployerDashboard from './pages/EmployerDashboard'
 import EmployerApplications from './pages/EmployerApplications'
+import EmployerEmployees from './pages/EmployerEmployees'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import FAQ from './pages/FAQ'
-import PwaInstallPrompt from './components/PwaInstallPrompt'
-import JobDetail from './pages/JobDetail';
-
+import Unsubscribe from './pages/Unsubscribe'
 
 function Layout({ children }) {
   const location = useLocation()
@@ -37,7 +36,6 @@ function Layout({ children }) {
       {!hideLayout && <Header />}
       {children}
       {!hideLayout && <Footer />}
-      <PwaInstallPrompt />
     </>
   )
 }
@@ -54,8 +52,8 @@ function App() {
               <Route path="/post-job" element={<PostJob />} />
               <Route path="/jobs" element={<JobListings />} />
               <Route path="/faq" element={<FAQ />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/signup" element={<JobSeekerSignup />} />
               <Route path="/login" element={<JobSeekerLogin />} />
               <Route path="/profile" element={<JobSeekerProfile />} />
@@ -69,8 +67,9 @@ function App() {
               <Route path="/employer/update-password" element={<EmployerUpdatePassword />} />
               <Route path="/employer/dashboard" element={<EmployerDashboard />} />
               <Route path="/employer/applications/:jobId" element={<EmployerApplications />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/jobs/:id" element={<JobDetail />} />
+              <Route path="/employer/employees" element={<EmployerEmployees />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={<AdminDashboard />} />
             </Routes>
           </Layout>
         </BrowserRouter>
