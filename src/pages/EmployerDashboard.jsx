@@ -15,260 +15,37 @@ function useIsDesktop() {
   return isDesktop
 }
 
-const STATUS_STYLE = {
-  pending:  { bg: '#fff8e1', text: '#b45309' },
-  approved: { bg: '#dcfce7', text: '#166534' },
-  rejected: { bg: '#fee2e2', text: '#b91c1c' },
-  closed:   { bg: '#f3f4f6', text: '#6b7280' },
+const STATUS_STYLES = {
+  pending:  { backgroundColor: '#fff8e1', color: '#b45309' },
+  approved: { backgroundColor: '#e8f5ee', color: '#1a6b3c' },
+  rejected: { backgroundColor: '#fee2e2', color: '#b91c1c' },
+  closed:   { backgroundColor: '#f3f4f6', color: '#6b7280' },
 }
 
 const JOB_TYPE_LABELS = {
-  full_time: 'Full Time', part_time: 'Part Time',
-  contract: 'Contract',  internship: 'Internship',
-}
-
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
-  * { box-sizing: border-box; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.45} }
-  .oj-tab {
-    padding: 9px 22px; border-radius: 50px; border: none;
-    background: transparent; cursor: pointer; font-size: 14px;
-    font-weight: 600; color: #4b6358; font-family: 'Outfit', sans-serif;
-    transition: all 0.15s;
-  }
-  .oj-tab:hover { background: #dcfce7; color: #16a34a; }
-  .oj-tab-active { background: #16a34a !important; color: #fff !important; }
-  .oj-listing-card {
-    background: #fff; border-radius: 20px; padding: 24px;
-    border: 1.5px solid #dcfce7;
-    box-shadow: 0 2px 8px rgba(22,163,74,0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
-    animation: fadeUp 0.4s ease both; opacity: 0;
-  }
-  .oj-listing-card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(22,163,74,0.1); }
-  .oj-detail-card {
-    background: #fff; border-radius: 20px; padding: 28px;
-    border: 1.5px solid #dcfce7;
-    box-shadow: 0 2px 8px rgba(22,163,74,0.05);
-    animation: fadeUp 0.4s ease both; opacity: 0;
-  }
-  .oj-btn-green {
-    display: inline-flex; align-items: center; justify-content: center;
-    padding: 9px 20px; background: #16a34a; color: #fff;
-    border-radius: 50px; font-size: 13px; font-weight: 700;
-    text-decoration: none; border: none; cursor: pointer;
-    font-family: 'Outfit', sans-serif;
-    box-shadow: 0 3px 10px rgba(22,163,74,0.25);
-    transition: transform 0.15s, box-shadow 0.15s;
-  }
-  .oj-btn-green:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(22,163,74,0.35); }
-  .oj-btn-ghost {
-    display: inline-flex; align-items: center; justify-content: center;
-    padding: 8px 18px; background: transparent; color: #4b6358;
-    border: 1.5px solid #dcfce7; border-radius: 50px; font-size: 13px;
-    font-weight: 600; cursor: pointer; font-family: 'Outfit', sans-serif;
-    transition: all 0.15s;
-  }
-  .oj-btn-ghost:hover { background: #f0fdf4; border-color: #bbf7d0; }
-  .oj-btn-danger {
-    display: inline-flex; align-items: center;
-    padding: 8px 16px; background: transparent; color: #dc2626;
-    border: 1.5px solid #fca5a5; border-radius: 50px; font-size: 13px;
-    font-weight: 600; cursor: pointer; font-family: 'Outfit', sans-serif;
-    transition: all 0.15s;
-  }
-  .oj-btn-danger:hover { background: #fee2e2; }
-`
-
-function DetailRow({ label, value }) {
-  if (!value) return null
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <span style={{ display:'block', fontSize:11, fontWeight:700, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:3 }}>{label}</span>
-      <span style={{ fontSize:14, color:'#14532d', fontWeight:500 }}>{value}</span>
-    </div>
-  )
-}
-
-// ─── Employer Profile Tab — view + inline edit ────────────────────────────────
-function EmployerProfileTab({ employerProfile, logoUploading, logoError, handleLogoChange, refreshEmployerProfile, isDesktop }) {
-  const [editing, setEditing]       = useState(false)
-  const [saving, setSaving]         = useState(false)
-  const [saveError, setSaveError]   = useState('')
-  const [saveSuccess, setSaveSuccess] = useState(false)
-  const [editForm, setEditForm]     = useState({
-    contact_person:  employerProfile.contact_person  || '',
-    phone_number:    employerProfile.phone_number    || '',
-    whatsapp_number: employerProfile.whatsapp_number || '',
-  })
-
-  function handleChange(e) {
-    const { name, value } = e.target
-    setEditForm(prev => ({ ...prev, [name]: value }))
-  }
-
-  async function handleSave(e) {
-    e.preventDefault()
-    setSaveError(''); setSaveSuccess(false)
-    if (!editForm.contact_person || !editForm.phone_number) {
-      setSaveError('Contact person and phone number are required.')
-      return
-    }
-    setSaving(true)
-    try {
-      const { error } = await supabase
-        .from('employers')
-        .update({
-          contact_person:  editForm.contact_person.trim(),
-          phone_number:    editForm.phone_number.trim(),
-          whatsapp_number: editForm.whatsapp_number.trim() || null,
-        })
-        .eq('id', employerProfile.id)
-      if (error) throw error
-      if (refreshEmployerProfile) await refreshEmployerProfile()
-      setSaveSuccess(true)
-      setEditing(false)
-    } catch {
-      setSaveError('Could not save changes. Please try again.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const inputStyle = {
-    width:'100%', padding:'11px 14px', fontSize:14,
-    fontFamily:"'Outfit',sans-serif",
-    border:'1.5px solid #dcfce7', borderRadius:12,
-    background:'#f0fdf4', color:'#14532d', outline:'none',
-    transition:'border 0.15s, box-shadow 0.15s',
-  }
-
-  return (
-    <div className="oj-detail-card" style={{ maxWidth: isDesktop ? 560 : '100%' }}>
-
-      {/* Logo section */}
-      <div style={{ display:'flex', alignItems:'center', gap:18, marginBottom:24 }}>
-        <div style={{ position:'relative', flexShrink:0 }}>
-          {employerProfile.logo_url ? (
-            <img src={employerProfile.logo_url} alt="Logo"
-              style={{ width:72, height:72, borderRadius:14, objectFit:'contain', border:'1.5px solid #dcfce7', display:'block' }} />
-          ) : (
-            <div style={{ width:72, height:72, borderRadius:14, background:'linear-gradient(135deg,#16a34a,#22c55e)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:900, color:'#fff' }}>
-              {employerProfile.organization_name?.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <label style={{ position:'absolute', bottom:-4, right:-4, width:26, height:26, borderRadius:'50%', background:'#fff', border:'1.5px solid #dcfce7', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:12, boxShadow:'0 2px 6px rgba(0,0,0,0.1)' }}
-            title={logoUploading ? 'Uploading...' : 'Upload logo'}>
-            {logoUploading ? '⏳' : '📷'}
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoChange} style={{ display:'none' }} disabled={logoUploading} />
-          </label>
-        </div>
-        <div>
-          <p style={{ fontSize:13, color:'#4b6358', margin:0, lineHeight:1.5 }}>
-            Upload your organisation logo (JPG, PNG or WebP, max 2MB)
-          </p>
-          {logoError && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{logoError}</p>}
-        </div>
-      </div>
-
-      <h3 style={{ fontSize:15, fontWeight:800, color:'#16a34a', margin:'0 0 20px', paddingBottom:10, borderBottom:'2px solid #dcfce7' }}>
-        Employer Details
-      </h3>
-
-      {saveSuccess && (
-        <div style={{ background:'#dcfce7', color:'#166534', fontSize:13, padding:'11px 14px', borderRadius:12, marginBottom:20, fontWeight:700, border:'1px solid #bbf7d0' }}>
-          ✓ Details updated successfully.
-        </div>
-      )}
-
-      {/* Read-only fields */}
-      <DetailRow label="Organisation"    value={employerProfile.organization_name} />
-      <DetailRow label="Email"           value={employerProfile.email} />
-      <DetailRow label="LGA"             value={employerProfile.lga} />
-      <DetailRow label="Industry"        value={employerProfile.industry} />
-      <DetailRow label="About"           value={employerProfile.description} />
-      <DetailRow label="Business Type"   value={employerProfile.business_type} />
-      <DetailRow label="CAC Number"      value={employerProfile.cac_number} />
-      <DetailRow label="Year Registered" value={employerProfile.year_registered} />
-      <DetailRow label="Account Status"  value={employerProfile.status === 'approved' ? '✓ Active' : '⏳ Pending Review'} />
-
-      {/* Editable fields — view mode */}
-      {!editing && (
-        <>
-          <div style={{ height:1, background:'#dcfce7', margin:'16px 0' }} />
-          <DetailRow label="Contact Person"  value={employerProfile.contact_person} />
-          <DetailRow label="Phone Number"    value={employerProfile.phone_number} />
-          <DetailRow label="WhatsApp Number" value={employerProfile.whatsapp_number} />
-          <div style={{ marginTop:20, display:'flex', gap:12, flexWrap:'wrap' }}>
-            <button
-              onClick={() => { setEditing(true); setSaveSuccess(false) }}
-              style={{ padding:'10px 24px', background:'#fff', color:'#16a34a', border:'2px solid #16a34a', borderRadius:50, fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:"'Outfit',sans-serif" }}>
-              Edit Contact Details
-            </button>
-          </div>
-          <p style={{ fontSize:13, color:'#9ca3af', marginTop:14, lineHeight:1.5 }}>
-            To update your organisation name, LGA, industry, or CAC details, contact us via WhatsApp.
-          </p>
-        </>
-      )}
-
-      {/* Editable fields — edit mode */}
-      {editing && (
-        <form onSubmit={handleSave}>
-          <div style={{ height:1, background:'#dcfce7', margin:'16px 0 20px' }} />
-          <h4 style={{ fontSize:14, fontWeight:800, color:'#14532d', margin:'0 0 16px' }}>Edit Contact Details</h4>
-
-          <div style={{ marginBottom:18 }}>
-            <label style={{ display:'block', fontSize:13, fontWeight:700, color:'#166634', marginBottom:7 }}>Contact Person *</label>
-            <input style={inputStyle} type="text" name="contact_person" value={editForm.contact_person} onChange={handleChange} placeholder="Full name of contact" />
-          </div>
-          <div style={{ marginBottom:18 }}>
-            <label style={{ display:'block', fontSize:13, fontWeight:700, color:'#166634', marginBottom:7 }}>Phone Number *</label>
-            <input style={inputStyle} type="tel" name="phone_number" value={editForm.phone_number} onChange={handleChange} placeholder="e.g. 08012345678" />
-          </div>
-          <div style={{ marginBottom:20 }}>
-            <label style={{ display:'block', fontSize:13, fontWeight:700, color:'#166634', marginBottom:7 }}>WhatsApp Number</label>
-            <input style={inputStyle} type="tel" name="whatsapp_number" value={editForm.whatsapp_number} onChange={handleChange} placeholder="e.g. 08012345678 (if different from phone)" />
-          </div>
-
-          {saveError && (
-            <div style={{ background:'#fee2e2', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16, fontWeight:600 }}>
-              {saveError}
-            </div>
-          )}
-
-          <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
-            <button type="submit" disabled={saving}
-              style={{ padding:'11px 28px', background: saving ? '#9ca3af' : '#16a34a', color:'#fff', border:'none', borderRadius:50, fontWeight:700, fontSize:14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily:"'Outfit',sans-serif", boxShadow: saving ? 'none' : '0 4px 12px rgba(22,163,74,0.25)' }}>
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-            <button type="button" onClick={() => { setEditing(false); setSaveError('') }}
-              style={{ padding:'11px 24px', background:'transparent', color:'#4b6358', border:'1.5px solid #dcfce7', borderRadius:50, fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:"'Outfit',sans-serif" }}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
-  )
+  full_time:  'Full Time',
+  part_time:  'Part Time',
+  contract:   'Contract',
+  internship: 'Internship',
 }
 
 export default function EmployerDashboard() {
   const { employer, employerProfile, employerLoading, employerSignOut, refreshEmployerProfile } = useEmployerAuth()
-  const navigate   = useNavigate()
-  const isDesktop  = useIsDesktop()
+  const navigate = useNavigate()
+  const isDesktop = useIsDesktop()
 
-  const [listings, setListings]           = useState([])
+  const [listings, setListings] = useState([])
   const [listingsLoading, setListingsLoading] = useState(true)
-  const [signingOut, setSigningOut]       = useState(false)
-  const [activeTab, setActiveTab]         = useState('listings')
-  const [stats, setStats]                 = useState({ total:0, approved:0, pending:0, closed:0 })
+  const [signingOut, setSigningOut] = useState(false)
+  const [activeTab, setActiveTab] = useState('listings')
+  const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, closed: 0 })
+  const [employeeCount, setEmployeeCount] = useState(0)
+
   const [logoUploading, setLogoUploading] = useState(false)
-  const [logoError, setLogoError]         = useState('')
+  const [logoError, setLogoError] = useState('')
 
   const handleTimeout = useCallback(async () => {
+    clearActivity('employer')
     await employerSignOut()
     navigate('/employer/login?timeout=1')
   }, [employerSignOut, navigate])
@@ -276,30 +53,49 @@ export default function EmployerDashboard() {
   useInactivityTimeout('employer', handleTimeout)
 
   useEffect(() => {
-    if (!employerLoading && !employer) navigate('/employer/login')
+    if (!employerLoading && !employer) {
+      navigate('/employer/login')
+    }
   }, [employer, employerLoading, navigate])
 
   useEffect(() => {
-    if (employerProfile) fetchListings()
+    if (employerProfile) {
+      fetchListings()
+      fetchEmployeeCount()
+    }
   }, [employerProfile])
 
   async function fetchListings() {
     setListingsLoading(true)
     const { data } = await supabase
       .from('job_listings')
-      .select('id, job_title, job_type, labour_type, location, lga, status, created_at, approved_at, applications(id)')
+      .select(`
+        id, job_title, job_type, labour_type, location, lga,
+        status, created_at, approved_at,
+        applications ( id )
+      `)
       .eq('employer_id', employerProfile.id)
       .order('created_at', { ascending: false })
+
     if (data) {
       setListings(data)
       setStats({
-        total:    data.length,
+        total: data.length,
         approved: data.filter(j => j.status === 'approved').length,
-        pending:  data.filter(j => j.status === 'pending').length,
-        closed:   data.filter(j => j.status === 'closed').length,
+        pending: data.filter(j => j.status === 'pending').length,
+        closed: data.filter(j => j.status === 'closed').length,
       })
     }
     setListingsLoading(false)
+  }
+
+  async function fetchEmployeeCount() {
+    const { count } = await supabase
+      .from('employees')
+      .select('*', { count: 'exact', head: true })
+      .eq('employer_id', employerProfile.id)
+      .eq('status', 'active')
+    if (count !== null) setEmployeeCount(count)
   }
 
   async function handleSignOut() {
@@ -311,176 +107,171 @@ export default function EmployerDashboard() {
 
   async function handleCloseJob(jobId) {
     const { error } = await supabase
-      .from('job_listings').update({ status: 'closed' }).eq('id', jobId)
+      .from('job_listings')
+      .update({ status: 'closed' })
+      .eq('id', jobId)
     if (!error) fetchListings()
   }
 
   async function handleLogoChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
-      setLogoError('Only JPG, PNG or WebP images are allowed.'); return
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      setLogoError('Only JPG, PNG or WebP images are allowed.')
+      return
     }
     if (file.size > 2 * 1024 * 1024) {
-      setLogoError('Logo must be under 2MB.'); return
+      setLogoError('Logo must be under 2MB.')
+      return
     }
-    setLogoError(''); setLogoUploading(true)
+    setLogoError('')
+    setLogoUploading(true)
     try {
-      const ext      = file.name.split('.').pop()
+      const ext = file.name.split('.').pop()
       const fileName = `employer_${employerProfile.id}_${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
-        .from('logos').upload(fileName, file, { upsert: true })
+        .from('avatars').upload(fileName, file, { upsert: true })
       if (uploadError) throw uploadError
-      const { data: urlData } = supabase.storage.from('logos').getPublicUrl(fileName)
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName)
       const { error: updateError } = await supabase
         .from('employers').update({ logo_url: urlData.publicUrl }).eq('id', employerProfile.id)
       if (updateError) throw updateError
       if (refreshEmployerProfile) await refreshEmployerProfile()
-    } catch { setLogoError('Logo upload failed. Please try again.') }
-    finally   { setLogoUploading(false) }
+    } catch (err) {
+      console.error(err)
+      setLogoError('Logo upload failed. Please try again.')
+    } finally {
+      setLogoUploading(false)
+    }
   }
 
-  // ── Loading state ─────────────────────────────────────────────────────────
   if (employerLoading) {
     return (
-      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f0fdf4', fontFamily:"'Outfit',sans-serif" }}>
-        <style>{CSS}</style>
-        <div style={{ textAlign:'center' }}>
-          <div style={{ width:48, height:48, borderRadius:'50%', border:'4px solid #dcfce7', borderTopColor:'#16a34a', animation:'spin 0.8s linear infinite', margin:'0 auto 16px' }} />
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <p style={{ color:'#4b6358', fontSize:15 }}>Loading your dashboard...</p>
-        </div>
+      <div style={styles.centred}>
+        <p style={styles.loadingText}>Loading your dashboard...</p>
       </div>
     )
   }
 
-  // ── No profile state ──────────────────────────────────────────────────────
   if (!employerProfile) {
     return (
-      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f0fdf4', padding:24, fontFamily:"'Outfit',sans-serif" }}>
-        <style>{CSS}</style>
-        <div style={{ background:'#fff', borderRadius:24, padding:'48px 36px', maxWidth:400, textAlign:'center', border:'1.5px solid #dcfce7' }}>
-          <div style={{ fontSize:48, marginBottom:16 }}>🏢</div>
-          <h2 style={{ fontSize:20, fontWeight:800, color:'#14532d', margin:'0 0 10px' }}>Profile not found</h2>
-          <p style={{ fontSize:14, color:'#4b6358', margin:'0 0 24px', lineHeight:1.6 }}>
-            Your account exists but your employer profile could not be loaded. Please try logging out and back in.
+      <div style={styles.centred}>
+        <div style={styles.emptyCard}>
+          <h2 style={styles.emptyTitle}>Profile not found</h2>
+          <p style={styles.emptyText}>
+            Your account exists but your employer profile could not be loaded.
+            Please try logging out and back in.
           </p>
-          <button onClick={handleSignOut} className="oj-btn-green" style={{ width:'100%' }}>Sign Out</button>
+          <button onClick={handleSignOut} style={styles.btn}>Sign Out</button>
         </div>
       </div>
     )
   }
 
-  const STAT_CARDS = [
-    { label:'Total Listings', value:stats.total,    color:'#14532d', bg:'#f0fdf4' },
-    { label:'Active',         value:stats.approved, color:'#166534', bg:'#dcfce7' },
-    { label:'Pending Review', value:stats.pending,  color:'#b45309', bg:'#fff8e1' },
-    { label:'Closed',         value:stats.closed,   color:'#6b7280', bg:'#f3f4f6' },
-  ]
-
   return (
-    <div style={{ fontFamily:"'Outfit','Segoe UI',sans-serif", background:'#f0fdf4', minHeight:'100vh', padding:'0 0 60px' }}>
-      <style>{CSS}</style>
+    <div style={styles.page}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
-      {/* ── PAGE HEADER ───────────────────────────────────────────────────── */}
-      <section style={{ background:'linear-gradient(135deg,#14532d 0%,#166534 50%,#15803d 100%)', padding:'32px 24px 28px' }}>
-        <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
+        {/* PAGE HEADER */}
+        <div style={styles.pageHeader}>
           <div>
-            <p style={{ fontSize:13, color:'rgba(255,255,255,0.6)', margin:'0 0 4px', fontWeight:500 }}>{APP_NAME}</p>
-            <h1 style={{ fontSize:'clamp(20px,3vw,28px)', fontWeight:900, color:'#fff', margin:0 }}>
-              {employerProfile.organization_name}
-            </h1>
+            <h1 style={styles.pageTitle}>Employer Dashboard</h1>
+            <p style={styles.pageSubtitle}>{APP_NAME} — {employerProfile.organization_name}</p>
           </div>
-          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-            <Link to="/post-job" className="oj-btn-green" style={{ background:'#fff', color:'#16a34a', boxShadow:'0 3px 10px rgba(0,0,0,0.1)' }}>
-              + Post a Job
-            </Link>
-            <button onClick={handleSignOut} disabled={signingOut} className="oj-btn-danger"
-              style={{ borderColor:'rgba(255,255,255,0.4)', color:'#fff' }}>
+          <div style={styles.headerActions}>
+            <Link to="/post-job" style={styles.postJobBtn}>+ Post a Job</Link>
+            <button onClick={handleSignOut} disabled={signingOut} style={styles.signOutBtn}>
               {signingOut ? 'Signing out...' : 'Sign Out'}
             </button>
           </div>
         </div>
-      </section>
 
-      <div style={{ maxWidth:1100, margin:'0 auto', padding:'0 24px' }}>
-
-        {/* ── STATS ROW ─────────────────────────────────────────────────── */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))', gap:14, margin:'24px 0 20px', marginTop:-20 }}>
-          {STAT_CARDS.map(s => (
-            <div key={s.label} style={{ background:'#fff', borderRadius:18, padding:'20px 16px', textAlign:'center', border:'1.5px solid #dcfce7', boxShadow:'0 4px 14px rgba(22,163,74,0.07)' }}>
-              <div style={{ fontSize:32, fontWeight:900, color:s.color, lineHeight:1 }}>{s.value}</div>
-              <div style={{ fontSize:12, color:'#9ca3af', marginTop:6, fontWeight:600 }}>{s.label}</div>
+        {/* STATS ROW */}
+        <div style={styles.statsRow}>
+          {[
+            { label: 'Total Listings', value: stats.total },
+            { label: 'Active', value: stats.approved },
+            { label: 'Pending Review', value: stats.pending },
+            { label: 'Closed', value: stats.closed },
+            { label: 'Active Employees', value: employeeCount },
+          ].map(stat => (
+            <div key={stat.label} style={styles.statCard}>
+              <span style={styles.statValue}>{stat.value}</span>
+              <span style={styles.statLabel}>{stat.label}</span>
             </div>
           ))}
         </div>
 
-        {/* ── TABS ──────────────────────────────────────────────────────── */}
-        <div style={{ display:'flex', gap:6, margin:'0 0 20px', background:'#fff', borderRadius:50, padding:5, width:'fit-content', border:'1.5px solid #dcfce7' }}>
-          <button className={`oj-tab${activeTab === 'listings' ? ' oj-tab-active' : ''}`}
-            onClick={() => setActiveTab('listings')}>
+        {/* TABS */}
+        <div style={styles.tabs}>
+          <button
+            style={{ ...styles.tab, ...(activeTab === 'listings' ? styles.tabActive : {}) }}
+            onClick={() => setActiveTab('listings')}
+          >
             My Listings
           </button>
-          <button className={`oj-tab${activeTab === 'profile' ? ' oj-tab-active' : ''}`}
-            onClick={() => setActiveTab('profile')}>
+          <button
+            style={{ ...styles.tab, ...(activeTab === 'team' ? styles.tabActive : {}) }}
+            onClick={() => setActiveTab('team')}
+          >
+            My Team
+          </button>
+          <button
+            style={{ ...styles.tab, ...(activeTab === 'profile' ? styles.tabActive : {}) }}
+            onClick={() => setActiveTab('profile')}
+          >
             Employer Details
           </button>
         </div>
 
-        {/* ── LISTINGS TAB ──────────────────────────────────────────────── */}
+        {/* LISTINGS TAB */}
         {activeTab === 'listings' && (
           <div>
             {listingsLoading ? (
-              <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                {[...Array(3)].map((_,i) => (
-                  <div key={i} style={{ background:'#fff', borderRadius:20, height:100, animation:'pulse 1.4s ease-in-out infinite', border:'1.5px solid #dcfce7' }} />
-                ))}
-              </div>
+              <p style={styles.loadingText}>Loading listings...</p>
             ) : listings.length === 0 ? (
-              <div style={{ background:'#fff', borderRadius:24, padding:'56px 24px', textAlign:'center', border:'1.5px dashed #bbf7d0' }}>
-                <div style={{ fontSize:48, marginBottom:14 }}>📋</div>
-                <p style={{ fontSize:17, fontWeight:800, color:'#14532d', margin:'0 0 8px' }}>No listings yet</p>
-                <p style={{ fontSize:14, color:'#4b6358', margin:'0 0 24px' }}>You have not posted any jobs yet.</p>
-                <Link to="/post-job" className="oj-btn-green">Post Your First Job</Link>
+              <div style={styles.emptyCard}>
+                <p style={styles.emptyText}>You have not posted any jobs yet.</p>
+                <Link to="/post-job" style={styles.btn}>Post Your First Job</Link>
               </div>
             ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                {listings.map((job, i) => {
+              <div style={styles.listingsList}>
+                {listings.map(job => {
                   const appCount = job.applications?.length || 0
-                  const s = STATUS_STYLE[job.status] || STATUS_STYLE.pending
                   return (
-                    <div key={job.id} className="oj-listing-card" style={{ animationDelay:`${i*0.05}s` }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:12, marginBottom:14 }}>
-                        <div style={{ flex:1 }}>
-                          <h3 style={{ fontSize:17, fontWeight:800, color:'#14532d', margin:'0 0 5px' }}>{job.job_title}</h3>
-                          <p style={{ fontSize:13, color:'#4b6358', margin:'0 0 4px', fontWeight:500 }}>
-                            📍 {job.lga || job.location || 'Oke-Ogun'}
+                    <div key={job.id} style={styles.listingCard}>
+                      <div style={styles.listingCardTop}>
+                        <div style={styles.listingCardLeft}>
+                          <h3 style={styles.listingTitle}>{job.job_title}</h3>
+                          <p style={styles.listingMeta}>
+                            {job.lga || job.location || 'Oke-Ogun'}
                             {job.job_type && ` · ${JOB_TYPE_LABELS[job.job_type] || job.job_type}`}
                             {job.labour_type && ` · ${job.labour_type.charAt(0).toUpperCase() + job.labour_type.slice(1)}`}
                           </p>
-                          <p style={{ fontSize:12, color:'#9ca3af', margin:0 }}>
-                            Posted {new Date(job.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}
+                          <p style={styles.listingDate}>
+                            Posted {new Date(job.created_at).toLocaleDateString('en-GB', {
+                              day: 'numeric', month: 'short', year: 'numeric'
+                            })}
                           </p>
                         </div>
-                        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8 }}>
-                          <span style={{ fontSize:12, padding:'4px 12px', borderRadius:20, fontWeight:700, background:s.bg, color:s.text }}>
+                        <div style={styles.listingCardRight}>
+                          <span style={{ ...styles.statusPill, ...(STATUS_STYLES[job.status] || STATUS_STYLES.pending) }}>
                             {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                           </span>
-                          <span style={{ fontSize:12, padding:'4px 12px', borderRadius:20, background:'#f0fdf4', color:'#166534', fontWeight:600, border:'1px solid #dcfce7' }}>
+                          <span style={styles.appCountPill}>
                             {appCount} {appCount === 1 ? 'application' : 'applications'}
                           </span>
                         </div>
                       </div>
-
-                      {/* Actions */}
-                      <div style={{ display:'flex', gap:10, flexWrap:'wrap', paddingTop:14, borderTop:'1px solid #f0fdf4' }}>
+                      <div style={styles.listingActions}>
                         {appCount > 0 && (
-                          <Link to={`/employer/applications/${job.id}`} className="oj-btn-green" style={{ fontSize:13, padding:'8px 18px' }}>
+                          <Link to={`/employer/applications/${job.id}`} style={styles.viewAppsBtn}>
                             View Applications
                           </Link>
                         )}
                         {job.status === 'approved' && (
-                          <button onClick={() => handleCloseJob(job.id)} className="oj-btn-ghost" style={{ fontSize:13, padding:'8px 16px' }}>
+                          <button onClick={() => handleCloseJob(job.id)} style={styles.closeJobBtn}>
                             Close Listing
                           </button>
                         )}
@@ -493,19 +284,157 @@ export default function EmployerDashboard() {
           </div>
         )}
 
-        {/* ── PROFILE TAB ───────────────────────────────────────────────── */}
+        {/* MY TEAM TAB */}
+        {activeTab === 'team' && (
+          <div style={styles.teamCard}>
+            <div style={styles.teamCardInner}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>👥</div>
+              <h3 style={styles.teamTitle}>HR & Employee Management</h3>
+              <p style={styles.teamDesc}>
+                Manage your team in one place. Add existing employees, track new hires from OkeOgunJobs, update employment status, and keep records of your full workforce.
+              </p>
+              <div style={styles.teamStats}>
+                <div style={styles.teamStatItem}>
+                  <span style={styles.teamStatNum}>{employeeCount}</span>
+                  <span style={styles.teamStatLabel}>Active Employees</span>
+                </div>
+              </div>
+              <Link to="/employer/employees" style={styles.teamBtn}>
+                Manage My Team →
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* EMPLOYER DETAILS TAB */}
         {activeTab === 'profile' && (
-          <EmployerProfileTab
-            employerProfile={employerProfile}
-            logoUploading={logoUploading}
-            logoError={logoError}
-            handleLogoChange={handleLogoChange}
-            refreshEmployerProfile={refreshEmployerProfile}
-            isDesktop={isDesktop}
-          />
+          <div style={styles.detailCard}>
+            <div style={styles.logoRow}>
+              <div style={styles.logoWrap}>
+                {employerProfile.logo_url ? (
+                  <img src={employerProfile.logo_url} alt="Logo" style={styles.logoImg} />
+                ) : (
+                  <div style={styles.logoInitial}>
+                    {employerProfile.organization_name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <label style={styles.logoEditBtn} title={logoUploading ? 'Uploading...' : 'Upload logo'}>
+                  {logoUploading ? '⏳' : '📷'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoChange}
+                    style={{ display: 'none' }}
+                    disabled={logoUploading}
+                  />
+                </label>
+              </div>
+              <div>
+                <p style={styles.logoHint}>Upload your organisation logo (JPG, PNG or WebP, max 2MB)</p>
+                {logoError && <p style={styles.logoError}>{logoError}</p>}
+              </div>
+            </div>
+
+            <h3 style={styles.detailCardTitle}>Employer Details</h3>
+            <div style={styles.detailGrid}>
+              <DetailRow label="Organisation" value={employerProfile.organization_name} />
+              <DetailRow label="Contact Person" value={employerProfile.contact_person} />
+              <DetailRow label="Phone" value={employerProfile.phone_number} />
+              {employerProfile.email && <DetailRow label="Email" value={employerProfile.email} />}
+              {employerProfile.lga && <DetailRow label="LGA" value={employerProfile.lga} />}
+              {employerProfile.industry && <DetailRow label="Industry" value={employerProfile.industry} />}
+              {employerProfile.description && <DetailRow label="About" value={employerProfile.description} />}
+              {employerProfile.business_type && <DetailRow label="Business Type" value={employerProfile.business_type} />}
+              {employerProfile.cac_number && <DetailRow label="CAC Number" value={employerProfile.cac_number} />}
+              {employerProfile.year_registered && <DetailRow label="Year Registered" value={employerProfile.year_registered} />}
+              <DetailRow
+                label="Account Status"
+                value={employerProfile.status === 'approved' ? 'Active' : 'Pending Review'}
+              />
+            </div>
+            <p style={styles.detailNote}>
+              To update your organisation details, contact us via WhatsApp.
+            </p>
+          </div>
         )}
 
       </div>
     </div>
   )
+}
+
+function DetailRow({ label, value }) {
+  if (!value) return null
+  return (
+    <div style={detailRowStyles.row}>
+      <span style={detailRowStyles.label}>{label}</span>
+      <span style={detailRowStyles.value}>{value}</span>
+    </div>
+  )
+}
+
+const detailRowStyles = {
+  row: { display: 'flex', flexDirection: 'column', marginBottom: '16px' },
+  label: { fontSize: '12px', fontWeight: '700', color: '#888', textTransform: 'uppercase', marginBottom: '2px' },
+  value: { fontSize: '14px', color: '#222' },
+}
+
+const styles = {
+  page: { minHeight: '100vh', backgroundColor: '#f5f7f5', padding: '40px 24px' },
+  centred: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f7f5', padding: '24px' },
+  loadingText: { color: '#888', fontSize: '15px' },
+  pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' },
+  pageTitle: { fontSize: 'clamp(20px, 3vw, 26px)', fontWeight: 'bold', color: '#1a6b3c', margin: 0 },
+  pageSubtitle: { fontSize: '13px', color: '#888', marginTop: '2px' },
+  headerActions: { display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' },
+  postJobBtn: { padding: '9px 20px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', fontWeight: '700', fontSize: '14px', textDecoration: 'none' },
+  signOutBtn: { padding: '8px 16px', backgroundColor: 'transparent', color: '#e53e3e', border: '1px solid #e53e3e', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' },
+  statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '12px', marginBottom: '20px' },
+  statCard: { backgroundColor: '#fff', borderRadius: '10px', padding: '16px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
+  statValue: { fontSize: '28px', fontWeight: 'bold', color: '#1a6b3c' },
+  statLabel: { fontSize: '12px', color: '#888', marginTop: '4px', textAlign: 'center' },
+  tabs: { display: 'flex', gap: '4px', marginBottom: '16px', backgroundColor: '#fff', borderRadius: '10px', padding: '4px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', width: 'fit-content', flexWrap: 'wrap' },
+  tab: { padding: '8px 20px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#888' },
+  tabActive: { backgroundColor: '#1a6b3c', color: '#fff' },
+  listingsList: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  listingCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
+  listingCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' },
+  listingCardLeft: { flex: 1 },
+  listingCardRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' },
+  listingTitle: { fontSize: '16px', fontWeight: '700', color: '#222', margin: '0 0 4px 0' },
+  listingMeta: { fontSize: '13px', color: '#666', margin: '0 0 4px 0' },
+  listingDate: { fontSize: '12px', color: '#aaa', margin: 0 },
+  statusPill: { fontSize: '12px', padding: '4px 12px', borderRadius: '12px', fontWeight: '600' },
+  appCountPill: { fontSize: '12px', padding: '4px 12px', borderRadius: '12px', backgroundColor: '#f3f4f6', color: '#555', fontWeight: '600' },
+  listingActions: { display: 'flex', gap: '10px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #f0f0f0' },
+  viewAppsBtn: { padding: '7px 16px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' },
+  closeJobBtn: { padding: '7px 16px', backgroundColor: 'transparent', color: '#888', border: '1px solid #ddd', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
+
+  // My Team card
+  teamCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', textAlign: 'center' },
+  teamCardInner: { maxWidth: '480px', margin: '0 auto' },
+  teamTitle: { fontSize: '20px', fontWeight: '700', color: '#1a6b3c', marginBottom: '10px' },
+  teamDesc: { fontSize: '14px', color: '#555', lineHeight: '1.7', marginBottom: '20px' },
+  teamStats: { display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '24px' },
+  teamStatItem: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  teamStatNum: { fontSize: '32px', fontWeight: 'bold', color: '#1a6b3c' },
+  teamStatLabel: { fontSize: '12px', color: '#888', marginTop: '4px' },
+  teamBtn: { display: 'inline-block', padding: '12px 28px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: '700', fontSize: '15px' },
+
+  // Detail card
+  detailCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '28px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', maxWidth: '520px' },
+  detailCardTitle: { fontSize: '15px', fontWeight: '700', color: '#1a6b3c', marginBottom: '20px', paddingBottom: '8px', borderBottom: '2px solid #e8f5ee' },
+  detailGrid: {},
+  detailNote: { fontSize: '13px', color: '#aaa', marginTop: '8px' },
+  logoRow: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' },
+  logoWrap: { position: 'relative', flexShrink: 0 },
+  logoImg: { width: '72px', height: '72px', borderRadius: '12px', objectFit: 'cover', display: 'block', border: '1px solid #eee' },
+  logoInitial: { width: '72px', height: '72px', borderRadius: '12px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '28px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  logoEditBtn: { position: 'absolute', bottom: '-4px', right: '-4px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#fff', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' },
+  logoHint: { fontSize: '13px', color: '#888', margin: 0 },
+  logoError: { fontSize: '12px', color: '#e53e3e', marginTop: '4px' },
+  emptyCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
+  emptyTitle: { fontSize: '18px', fontWeight: '700', color: '#222', marginBottom: '8px' },
+  emptyText: { fontSize: '14px', color: '#888', marginBottom: '20px' },
+  btn: { display: 'inline-block', padding: '12px 28px', backgroundColor: '#1a6b3c', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', fontSize: '14px', border: 'none', cursor: 'pointer' },
 }
