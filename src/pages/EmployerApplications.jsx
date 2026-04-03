@@ -483,12 +483,17 @@ export default function EmployerApplications() {
                       </div>
                     )}
 
-                    {/* ACCEPTED — WhatsApp link to follow up */}
+                    {/* ACCEPTED — WhatsApp link + Add to Team */}
                     {app.status === 'accepted' && (
                       <div style={styles.decisionMadeRow}>
                         <span style={{ ...styles.decisionBadge, backgroundColor: '#e8f5ee', color: '#1a6b3c' }}>
                           ✓ Accepted
                         </span>
+                        <AddToTeamButton
+                          seeker={seeker}
+                          jobTitle={job.job_title}
+                          employerProfileId={employerProfile.id}
+                        />
                         {(seeker?.whatsapp_number || seeker?.phone_number) && (
                           <a
                             href={getWhatsAppLink(seeker.whatsapp_number || seeker.phone_number, seeker.full_name, 'accepted')}
@@ -552,6 +557,66 @@ export default function EmployerApplications() {
 
       </div>
     </div>
+  )
+}
+
+function AddToTeamButton({ seeker, jobTitle, employerProfileId }) {
+  const [added, setAdded] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [checked, setChecked] = useState(false)
+  const [alreadyExists, setAlreadyExists] = useState(false)
+
+  useEffect(() => {
+    async function check() {
+      if (!seeker?.id) return
+      const { data } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('employer_id', employerProfileId)
+        .eq('job_seeker_id', seeker.id)
+        .single()
+      if (data) setAlreadyExists(true)
+      setChecked(true)
+    }
+    check()
+  }, [seeker?.id, employerProfileId])
+
+  async function handleAdd() {
+    if (!seeker) return
+    setAdding(true)
+    const { error } = await supabase.from('employees').insert({
+      employer_id: employerProfileId,
+      job_seeker_id: seeker.id,
+      full_name: seeker.full_name,
+      role: jobTitle || null,
+      phone_number: seeker.phone_number || null,
+      employment_type: 'full_time',
+      status: 'active',
+      source: 'platform',
+      start_date: new Date().toISOString().split('T')[0],
+    })
+    if (!error) {
+      setAdded(true)
+      setAlreadyExists(true)
+    }
+    setAdding(false)
+  }
+
+  if (!checked) return null
+  if (alreadyExists && !added) return (
+    <span style={{ fontSize: '12px', color: '#1a6b3c', fontWeight: '600' }}>✓ In your team</span>
+  )
+  if (added) return (
+    <span style={{ fontSize: '12px', color: '#1a6b3c', fontWeight: '600' }}>✓ Added to team</span>
+  )
+  return (
+    <button
+      onClick={handleAdd}
+      disabled={adding}
+      style={{ padding: '5px 14px', backgroundColor: '#f0fdf4', color: '#1a6b3c', border: '1px solid #bbf7d0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+    >
+      {adding ? '...' : '+ Add to My Team'}
+    </button>
   )
 }
 
