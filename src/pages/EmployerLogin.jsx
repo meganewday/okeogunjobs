@@ -97,7 +97,7 @@ export default function EmployerLogin() {
         border: '1.5px solid #dcfce7',
         boxShadow: '0 8px 32px rgba(22,163,74,0.1)',
       }}>
-        <LogoMark />
+      
 
         {/* Employer badge */}
         <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#dcfce7', color:'#166534', borderRadius:50, padding:'5px 14px', fontSize:12, fontWeight:700, marginBottom:16 }}>

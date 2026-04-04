@@ -142,8 +142,7 @@ export default function JobSeekerSignup() {
       <div style={pageStyle}>
         <style>{CSS}</style>
         <div style={{ ...cardStyle, textAlign: 'center' }}>
-          <LogoMark />
-          <div style={{ fontSize: 52, marginBottom: 16 }}>✉️</div>
+                  <div style={{ fontSize: 52, marginBottom: 16 }}>✉️</div>
           <h1 style={{ fontSize: 22, fontWeight: 900, color: '#14532d', margin: '0 0 12px' }}>
             Check your email
           </h1>
@@ -165,8 +164,7 @@ export default function JobSeekerSignup() {
       <style>{CSS}</style>
 
       <div style={cardStyle}>
-        <LogoMark />
-
+        
         <h1 style={{ fontSize: 22, fontWeight: 900, color: '#14532d', margin: '0 0 8px' }}>
           Create your account
         </h1>

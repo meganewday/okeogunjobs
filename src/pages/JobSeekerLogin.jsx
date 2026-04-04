@@ -121,8 +121,7 @@ export default function JobSeekerLogin() {
         border: '1.5px solid #dcfce7',
         boxShadow: '0 8px 32px rgba(22,163,74,0.1)',
       }}>
-        <LogoMark />
-
+        
         <h1 style={{ fontSize: 22, fontWeight: 900, color: '#14532d', margin: '0 0 8px' }}>
           Log in to your account
         </h1>

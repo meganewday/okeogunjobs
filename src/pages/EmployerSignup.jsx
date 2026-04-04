@@ -226,7 +226,7 @@ export default function EmployerSignup() {
       <div style={pageStyle}>
         <style>{CSS}</style>
         <div style={{ ...cardStyle, textAlign:'center' }}>
-          <LogoMark />
+          
           <div style={{ fontSize:52, marginBottom:16 }}>✉️</div>
           <h1 style={{ fontSize:22, fontWeight:900, color:'#14532d', margin:'0 0 12px' }}>Check your email</h1>
           <p style={{ fontSize:14, color:'#4b6358', lineHeight:1.7, margin:'0 0 10px' }}>
@@ -246,8 +246,7 @@ export default function EmployerSignup() {
       <style>{CSS}</style>
 
       <div style={cardStyle}>
-        <LogoMark />
-
+        
         {/* Employer badge */}
         <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#dcfce7', color:'#166534', borderRadius:50, padding:'5px 14px', fontSize:12, fontWeight:700, marginBottom:20 }}>
           🏢 Employer Registration
