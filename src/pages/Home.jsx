@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
-import { Helmet } from 'react-helmet-async';
+import { Helmet } from 'react-helmet-async'
+import JobAlertSubscribe from '../components/JobAlertSubscribe';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const STEPS = [
@@ -248,7 +249,7 @@ export default function Home() {
     <div style={{ fontFamily:"'Outfit','Segoe UI',sans-serif", background:'#f0fdf4', overflowX:'hidden' }}>
       <style>{CSS}</style>
 <Helmet>
-  <title>OkeOgunJobs — Oke-Ogun Job Bank | Find Jobs in Oke-Ogun</title>
+  <title>OkeOgunJobs | Oke-Ogun Job Bank | Find Jobs in Oke-Ogun</title>
   <meta name="description" content="OkeOgunJobs connects Oke-Ogun indigenes to verified jobs across 10 LGAs in Oyo State. Browse job listings, register as a job seeker, or post a job today." />
   <link rel="canonical" href="https://okeogunjobs.com/" />
   <meta property="og:type" content="website" />
@@ -323,7 +324,9 @@ export default function Home() {
           </div>
         </div>
       </section>
-
+      
+<JobAlertSubscribe /> 
+      
       {/* ── ABOUT ───────────────────────────────────────────────────────── */}
       <section style={{ padding:'72px 24px', background:'#fff' }}>
         <div style={{ maxWidth:1100, margin:'0 auto' }}>
