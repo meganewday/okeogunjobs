@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { useAuth } from '../contexts/AuthContext'
 import { Helmet } from 'react-helmet-async'
+import JobAlertSubscribe from '../components/JobAlertSubscribe'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -309,6 +310,7 @@ export default function JobListings() {
           )}
         </div>
 
+    <JobAlertSubscribe /> 
         {/* JOB CARDS */}
         <div style={{ flex:1, width:'100%' }}>
           {loading ? (
