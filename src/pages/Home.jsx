@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { Helmet } from 'react-helmet-async'
-import JobAlertSubscribe from '../components/JobAlertSubscribe';
+import {
+  Leaf, MapPin, Check, Wrench, Building2, GraduationCap,
+  Handshake, Dumbbell, BookOpen, Briefcase, Users, Map
+} from 'lucide-react'
+import JobAlertSubscribe from '../components/JobAlertSubscribe'
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 const STEPS = [
   {
     number: '01', color: '#16a34a', bg: '#dcfce7',
@@ -30,15 +33,14 @@ const STEPS = [
 ]
 
 const WHO_WE_SERVE = [
-  { emoji: '🛠', title: 'Skilled Workers', description: 'Carpenters, electricians, nurses, teachers, farmers, drivers, and anyone with a trade or professional background. Register your profile and let employers in your LGA find you.' },
-  { emoji: '🏢', title: 'Local Employers', description: 'Businesses, farms, schools, clinics, and individuals across Oke-Ogun looking for staff. Post a job for free, specify the skill or labour type you need, and receive applications directly.' },
-  { emoji: '🎓', title: 'Fresh Graduates', description: 'Recently finished your degree or diploma? Register your profile with your qualification, your LGA, and the kind of work you are looking for.' },
-  { emoji: '🤝', title: 'Community Partners', description: 'NGOs, cooperatives, government agencies, and community organisations. Whether placing workers or running a programme, this platform serves the same communities you do.' },
-  { emoji: '💪', title: 'Unskilled Workers', description: 'Available for farm work, domestic work, load carrying, cleaning, or security? Register, select the type of work you can do, and employers who need that help will find you.' },
-  { emoji: '📚', title: 'IT / SIWES Students', description: 'Students from polytechnics, universities, and colleges of education looking for industrial attachment in Oke-Ogun. Fill in your institution, course, and academic level.' },
+  { Icon: Wrench,        title: 'Skilled Workers',     description: 'Carpenters, electricians, nurses, teachers, farmers, drivers, and anyone with a trade or professional background. Register your profile and let employers in your LGA find you.' },
+  { Icon: Building2,     title: 'Local Employers',     description: 'Businesses, farms, schools, clinics, and individuals across Oke-Ogun looking for staff. Post a job for free, specify the skill or labour type you need, and receive applications directly.' },
+  { Icon: GraduationCap, title: 'Fresh Graduates',     description: 'Recently finished your degree or diploma? Register your profile with your qualification, your LGA, and the kind of work you are looking for.' },
+  { Icon: Handshake,     title: 'Community Partners',  description: 'NGOs, cooperatives, government agencies, and community organisations. Whether placing workers or running a programme, this platform serves the same communities you do.' },
+  { Icon: Dumbbell,      title: 'Unskilled Workers',   description: 'Available for farm work, domestic work, load carrying, cleaning, or security? Register, select the type of work you can do, and employers who need that help will find you.' },
+  { Icon: BookOpen,      title: 'IT / SIWES Students', description: 'Students from polytechnics, universities, and colleges of education looking for industrial attachment in Oke-Ogun. Fill in your institution, course, and academic level.' },
 ]
 
-// ─── SVG Illustration ─────────────────────────────────────────────────────────
 const HeroIllustration = () => (
   <svg viewBox="0 0 480 400" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520 }}>
     <ellipse cx="300" cy="200" rx="160" ry="150" fill="#bbf7d0" opacity="0.5" />
@@ -85,22 +87,9 @@ const HeroIllustration = () => (
     <path d="M224 163 Q230 169 236 163" stroke="#92400e" strokeWidth="2" strokeLinecap="round" fill="none"/>
     <rect x="40" y="356" width="400" height="10" rx="5" fill="#bbf7d0" />
     <circle cx="420" cy="70" r="20" fill="#fde047" />
-    <defs>
-      <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.15" />
-      </filter>
-    </defs>
   </svg>
 )
 
-const CheckIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <circle cx="10" cy="10" r="10" fill="#16a34a"/>
-    <path d="M6 10.5l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-)
-
-// ─── Global CSS ───────────────────────────────────────────────────────────────
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
   * { box-sizing: border-box; }
@@ -121,13 +110,6 @@ const CSS = `
     transition:transform 0.15s,box-shadow 0.15s;
   }
   .oj-btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(22,163,74,0.45); }
-  .oj-btn-outline {
-    display:inline-block; padding:11px 26px; background:transparent; color:#16a34a;
-    border:2px solid #16a34a; border-radius:50px; font-weight:700; font-size:15px;
-    text-decoration:none; cursor:pointer; font-family:'Outfit',sans-serif;
-    transition:all 0.15s;
-  }
-  .oj-btn-outline:hover { background:#16a34a; color:#fff; }
   .oj-who-card {
     background:#fff; border-radius:20px; padding:24px 20px;
     border:1.5px solid #dcfce7; transition:transform 0.2s,box-shadow 0.2s;
@@ -162,13 +144,12 @@ function SectionPill({ children }) {
   )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export default function Home() {
-  const [latestJobs, setLatestJobs]             = useState([])
-  const [jobCount, setJobCount]                 = useState(0)
-  const [seekerCount, setSeekerCount]           = useState(0)
+  const [latestJobs, setLatestJobs]               = useState([])
+  const [jobCount, setJobCount]                   = useState(0)
+  const [seekerCount, setSeekerCount]             = useState(0)
   const [featuredEmployers, setFeaturedEmployers] = useState([])
-  const [loadingJobs, setLoadingJobs]           = useState(true)
+  const [loadingJobs, setLoadingJobs]             = useState(true)
 
   useEffect(() => {
     fetchLatestJobs()
@@ -203,8 +184,6 @@ export default function Home() {
 
   async function fetchFeaturedEmployers() {
     const now = new Date().toISOString()
-
-    // Tier 1 — paid featured
     const { data: paid } = await supabase
       .from('employers')
       .select('id, organization_name, lga, about, is_paid_featured, paid_featured_until')
@@ -214,8 +193,6 @@ export default function Home() {
       .limit(3)
 
     const paidIds = (paid || []).map(e => e.id)
-
-    // Tier 2 — auto: top by active job count
     const { data: allActive } = await supabase
       .from('job_listings')
       .select('employer_id, employers(id, organization_name, lga, about)')
@@ -229,18 +206,15 @@ export default function Home() {
         if (!counts[id]) counts[id] = { employer: listing.employers, count: 0 }
         counts[id].count += 1
       })
-
       const autoFeatured = Object.values(counts)
         .sort((a, b) => b.count - a.count)
         .slice(0, 3)
         .map(item => ({ ...item.employer, activeJobs: item.count, isPaid: false }))
-
       const paidWithMeta = (paid || []).map(e => ({
         ...e,
         activeJobs: allActive.filter(l => l.employer_id === e.id).length,
         isPaid: true,
       }))
-
       setFeaturedEmployers([...paidWithMeta, ...autoFeatured])
     }
   }
@@ -248,35 +222,35 @@ export default function Home() {
   return (
     <div style={{ fontFamily:"'Outfit','Segoe UI',sans-serif", background:'#f0fdf4', overflowX:'hidden' }}>
       <style>{CSS}</style>
-<Helmet>
-  <title>OkeOgunJobs | Oke-Ogun Job Bank | Find Jobs in Oke-Ogun</title>
-  <meta name="description" content="OkeOgunJobs connects Oke-Ogun indigenes to verified jobs across 10 LGAs in Oyo State. Browse job listings, register as a job seeker, or post a job today." />
-  <link rel="canonical" href="https://okeogunjobs.com/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://okeogunjobs.com/" />
-  <meta property="og:title" content="OkeOgunJobs — Oke-Ogun Job Bank" />
-  <meta property="og:description" content="Find verified jobs across all 10 LGAs of Oke-Ogun, Oyo State. Free for job seekers. Employers post jobs and find local talent directly." />
-  <meta property="og:image" content="https://okeogunjobs.com/og-image.png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:site_name" content="OkeOgunJobs" />
-  <meta property="og:locale" content="en_NG" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="OkeOgunJobs — Oke-Ogun Job Bank" />
-  <meta name="twitter:description" content="Find verified jobs across all 10 LGAs of Oke-Ogun, Oyo State. Free for job seekers." />
-  <meta name="twitter:image" content="https://okeogunjobs.com/og-image.png" />
-</Helmet>
-      {/* ── HERO ────────────────────────────────────────────────────────── */}
+
+      <Helmet>
+        <title>OkeOgunJobs — Oke-Ogun Job Bank | Find Jobs in Oke-Ogun</title>
+        <meta name="description" content="OkeOgunJobs connects Oke-Ogun indigenes to verified jobs across 10 LGAs in Oyo State. Browse job listings, register as a job seeker, or post a job today." />
+        <link rel="canonical" href="https://okeogunjobs.com/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://okeogunjobs.com/" />
+        <meta property="og:title" content="OkeOgunJobs — Oke-Ogun Job Bank" />
+        <meta property="og:description" content="Find verified jobs across all 10 LGAs of Oke-Ogun, Oyo State. Free for job seekers. Employers post jobs and find local talent directly." />
+        <meta property="og:image" content="https://okeogunjobs.com/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:site_name" content="OkeOgunJobs" />
+        <meta property="og:locale" content="en_NG" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="OkeOgunJobs — Oke-Ogun Job Bank" />
+        <meta name="twitter:description" content="Find verified jobs across all 10 LGAs of Oke-Ogun, Oyo State. Free for job seekers." />
+        <meta name="twitter:image" content="https://okeogunjobs.com/og-image.png" />
+      </Helmet>
+
+      {/* ── HERO ── */}
       <section style={{ background:'linear-gradient(135deg,#14532d 0%,#166534 45%,#15803d 100%)', padding:'64px 24px 52px', position:'relative', overflow:'hidden' }}>
-        {/* Decorative circles */}
         <div style={{ position:'absolute', top:-60, right:-60, width:240, height:240, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
         <div style={{ position:'absolute', bottom:-40, left:-40, width:180, height:180, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }} />
 
         <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', flexWrap:'wrap', alignItems:'center', gap:48, justifyContent:'space-between' }}>
-          {/* Left */}
           <div className="oj-hero-text" style={{ flex:'1 1 320px', maxWidth:540 }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,255,255,0.12)', borderRadius:50, padding:'6px 16px', marginBottom:24, fontSize:13, fontWeight:600, color:'#bbf7d0' }}>
-              🌿 Oke-Ogun's Free Job Platform
+              <Leaf size={14} strokeWidth={2.5} /> Oke-Ogun's Free Job Platform
             </div>
             <h1 style={{ fontSize:'clamp(30px,5vw,52px)', fontWeight:900, lineHeight:1.1, color:'#fff', margin:'0 0 18px' }}>
               Find work in Oke-Ogun.<br />
@@ -293,41 +267,43 @@ export default function Home() {
             <div style={{ display:'flex', gap:18, marginTop:28, flexWrap:'wrap' }}>
               {['Always free for seekers','Admin-verified listings','Covers 10 LGAs'].map(t => (
                 <div key={t} style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'rgba(255,255,255,0.8)', fontWeight:500 }}>
-                  <CheckIcon /> {t}
+                  <span style={{ width:18, height:18, borderRadius:'50%', background:'#16a34a', display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Check size={11} color="white" strokeWidth={3} />
+                  </span>
+                  {t}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right — illustration + live stats */}
           <div className="oj-hero-img" style={{ flex:'1 1 280px', display:'flex', flexDirection:'column', alignItems:'center', gap:24 }}>
             <div style={{ position:'relative' }}>
               <HeroIllustration />
-              <div className="oj-float" style={{ position:'absolute', top:-8, right:-8, background:'#fff', borderRadius:14, padding:'10px 16px', boxShadow:'0 4px 16px rgba(0,0,0,0.12)', fontSize:13, fontWeight:700, color:'#15803d', border:'1.5px solid #dcfce7' }}>
-                📍 Oke-Ogun, Oyo State
+              <div className="oj-float" style={{ position:'absolute', top:-8, right:-8, background:'#fff', borderRadius:14, padding:'10px 16px', boxShadow:'0 4px 16px rgba(0,0,0,0.12)', fontSize:13, fontWeight:700, color:'#15803d', border:'1.5px solid #dcfce7', display:'flex', alignItems:'center', gap:6 }}>
+                <MapPin size={14} color="#16a34a" strokeWidth={2.5} /> Oke-Ogun, Oyo State
               </div>
             </div>
 
-            {/* Live stats box */}
             <div style={{ background:'rgba(255,255,255,0.1)', borderRadius:20, padding:'20px 32px', display:'flex', gap:28, alignItems:'center', flexWrap:'wrap', justifyContent:'center', backdropFilter:'blur(4px)', border:'1px solid rgba(255,255,255,0.15)' }}>
               {[
-                { num: jobCount, suffix: '+', label: 'Active Jobs' },
-                { num: seekerCount, suffix: '+', label: 'Registered Seekers' },
-                { num: 10, suffix: '', label: 'LGAs Covered' },
+                { num: jobCount, suffix: '+', label: 'Active Jobs', Icon: Briefcase },
+                { num: seekerCount, suffix: '+', label: 'Registered Seekers', Icon: Users },
+                { num: 10, suffix: '', label: 'LGAs Covered', Icon: Map },
               ].map((stat, i) => (
                 <div key={i} style={{ textAlign:'center' }}>
                   <div style={{ fontSize:30, fontWeight:900, color:'#fff', lineHeight:1 }}>{stat.num}{stat.suffix}</div>
-                  <div style={{ fontSize:12, color:'rgba(255,255,255,0.7)', marginTop:4, fontWeight:500 }}>{stat.label}</div>
+                  <div style={{ fontSize:12, color:'rgba(255,255,255,0.7)', marginTop:4, fontWeight:500, display:'flex', alignItems:'center', gap:4, justifyContent:'center' }}>
+                    <stat.Icon size={11} strokeWidth={2} />
+                    {stat.label}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
       </section>
-      
-<JobAlertSubscribe /> 
-      
-      {/* ── ABOUT ───────────────────────────────────────────────────────── */}
+
+      {/* ── ABOUT ── */}
       <section style={{ padding:'72px 24px', background:'#fff' }}>
         <div style={{ maxWidth:1100, margin:'0 auto' }}>
           <div style={{ maxWidth:700 }}>
@@ -344,7 +320,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
+      {/* ── HOW IT WORKS ── */}
       <section style={{ padding:'72px 24px', background:'#f0fdf4' }}>
         <div style={{ maxWidth:1100, margin:'0 auto' }}>
           <div style={{ textAlign:'center', marginBottom:48 }}>
@@ -366,7 +342,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FEATURED EMPLOYERS ──────────────────────────────────────────── */}
+      {/* ── FEATURED EMPLOYERS ── */}
       {featuredEmployers.length > 0 && (
         <section style={{ padding:'72px 24px', background:'#fff' }}>
           <div style={{ maxWidth:1100, margin:'0 auto' }}>
@@ -375,7 +351,7 @@ export default function Home() {
             <p style={{ fontSize:15, color:'#4b6358', margin:'0 0 28px' }}>Organisations currently hiring across Oke-Ogun.</p>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:20 }}>
               {featuredEmployers.map((emp, i) => (
-                <div key={emp.id} className={`oj-employer-card oj-fade`} style={{ animationDelay:`${i*0.07}s` }}>
+                <div key={emp.id} className="oj-employer-card oj-fade" style={{ animationDelay:`${i*0.07}s` }}>
                   {emp.isPaid && (
                     <div style={{ position:'absolute', top:14, right:14, background:'#fef9c3', color:'#854d0e', fontSize:11, fontWeight:700, borderRadius:20, padding:'3px 10px', border:'1px solid #fde68a' }}>
                       Sponsored
@@ -387,7 +363,11 @@ export default function Home() {
                     </div>
                     <div>
                       <h3 style={{ fontSize:15, fontWeight:800, color:'#14532d', margin:'0 0 4px' }}>{emp.organization_name}</h3>
-                      {emp.lga && <p style={{ fontSize:12, color:'#888', margin:0 }}>📍 {emp.lga}</p>}
+                      {emp.lga && (
+                        <p style={{ fontSize:12, color:'#888', margin:0, display:'flex', alignItems:'center', gap:4 }}>
+                          <MapPin size={11} strokeWidth={2} /> {emp.lga}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -403,7 +383,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── LATEST JOBS + WHO WE SERVE ──────────────────────────────────── */}
+      {/* ── LATEST JOBS + WHO WE SERVE ── */}
       <section style={{ padding:'72px 24px', background: featuredEmployers.length > 0 ? '#f0fdf4' : '#fff' }}>
         <div style={{ maxWidth:1100, margin:'0 auto' }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:52 }}>
@@ -448,6 +428,11 @@ export default function Home() {
                 </div>
               )}
               <Link to="/jobs" className="oj-btn-primary">Browse All Jobs</Link>
+
+              {/* Job Alert Subscribe */}
+              <div style={{ marginTop:24 }}>
+                <JobAlertSubscribe />
+              </div>
             </div>
 
             {/* Who We Serve */}
@@ -457,7 +442,9 @@ export default function Home() {
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
                 {WHO_WE_SERVE.map((item, i) => (
                   <div key={item.title} className="oj-who-card oj-fade" style={{ animationDelay:`${i*0.07}s` }}>
-                    <span style={{ fontSize:22, display:'block', marginBottom:8 }}>{item.emoji}</span>
+                    <div style={{ width:36, height:36, borderRadius:10, background:'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>
+                      <item.Icon size={18} color="#16a34a" strokeWidth={2} />
+                    </div>
                     <h3 style={{ fontSize:13, fontWeight:800, color:'#14532d', margin:'0 0 6px' }}>{item.title}</h3>
                     <p style={{ fontSize:12, color:'#4b6358', lineHeight:1.65, margin:0 }}>{item.description}</p>
                   </div>
@@ -469,12 +456,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── CTA BANNER ──────────────────────────────────────────────────── */}
+      {/* ── CTA BANNER ── */}
       <section style={{ background:'linear-gradient(135deg,#14532d 0%,#166534 50%,#15803d 100%)', padding:'72px 24px', textAlign:'center', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', top:-60, left:-60, width:200, height:200, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
         <div style={{ position:'absolute', bottom:-80, right:-40, width:240, height:240, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }} />
         <div style={{ position:'relative', maxWidth:600, margin:'0 auto' }}>
-          <div style={{ fontSize:44, marginBottom:14 }}>🌿</div>
+          <div style={{ width:52, height:52, borderRadius:'50%', background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+            <Leaf size={26} color="#86efac" strokeWidth={2} />
+          </div>
           <h2 style={{ fontSize:'clamp(24px,3.5vw,38px)', fontWeight:900, color:'#fff', margin:'0 0 14px' }}>Ready to get started?</h2>
           <p style={{ fontSize:16, color:'rgba(255,255,255,0.82)', margin:'0 0 32px', lineHeight:1.7 }}>
             Registration is free and takes less than five minutes. Whether you are looking for work or looking to hire, start here.
