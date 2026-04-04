@@ -49,18 +49,6 @@ const CSS = `
   .oj-btn:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
 `
 
-function LogoMark() {
-  return (
-    <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginBottom: 28 }}>
-      <img src="/logo.png" alt="OkeOgunJobs" style={{ height: 36, width: 'auto', borderRadius: 7 }} />
-      <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 17, fontWeight: 900, letterSpacing: '-0.02em' }}>
-        <span style={{ color: '#14532d' }}>Oke-Ogun </span>
-        <span style={{ color: '#16a34a' }}>Jobs</span>
-      </span>
-    </Link>
-  )
-}
-
 export default function JobSeekerSignup() {
   const [form, setForm]             = useState({ email: '', password: '', confirmPassword: '' })
   const [submitting, setSubmitting] = useState(false)
