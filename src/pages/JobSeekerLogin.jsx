@@ -37,12 +37,12 @@ const CSS = `
     border: none;
     border-radius: 50px;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(22,163,74,0.32);
+    box-shadow: 0 2px 8px rgba(22,163,74,0.18);
     transition: transform 0.15s, box-shadow 0.15s;
   }
   .oj-login-btn:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(22,163,74,0.4);
+    box-shadow: 0 3px 12px rgba(22,163,74,0.22);
   }
   .oj-login-btn:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: none; }
 `

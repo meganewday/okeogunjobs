@@ -106,10 +106,10 @@ const CSS = `
     display:inline-block; padding:13px 28px; background:#16a34a; color:#fff;
     border-radius:50px; font-weight:700; font-size:15px; text-decoration:none;
     border:none; cursor:pointer; font-family:'Outfit',sans-serif;
-    box-shadow:0 4px 14px rgba(22,163,74,0.35);
+    box-shadow:0 2px 8px rgba(22,163,74,0.18);
     transition:transform 0.15s,box-shadow 0.15s;
   }
-  .oj-btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(22,163,74,0.45); }
+  .oj-btn-primary:hover { transform:translateY(-2px); box-shadow:0 3px 12px rgba(22,163,74,0.22); }
   .oj-who-card {
     background:#fff; border-radius:20px; padding:24px 20px;
     border:1.5px solid #dcfce7; transition:transform 0.2s,box-shadow 0.2s;

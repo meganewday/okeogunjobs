@@ -38,10 +38,10 @@ const CSS = `
     background: #16a34a; color: #fff; font-size: 15px; font-weight: 700;
     font-family: 'Outfit', sans-serif; border: none; border-radius: 50px;
     cursor: pointer; text-decoration: none; text-align: center;
-    box-shadow: 0 4px 14px rgba(22,163,74,0.32);
+    box-shadow: 0 2px 8px rgba(22,163,74,0.18);
     transition: transform 0.15s, box-shadow 0.15s;
   }
-  .oj-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(22,163,74,0.4); }
+  .oj-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 12px rgba(22,163,74,0.22); }
   .oj-btn:disabled, .oj-btn-disabled { background: #9ca3af !important; cursor: not-allowed !important; box-shadow: none !important; }
   .oj-back-btn {
     padding: 13px 20px; background: #fff; color: #4b6358;
