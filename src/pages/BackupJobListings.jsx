@@ -320,7 +320,7 @@ export default function JobListings() {
                         {job.location && <span style={styles.metaTag}>📍 {job.location}</span>}
                         {job.lga && <span style={styles.metaTag}>🏛 {job.lga}</span>}
                         <span style={styles.metaTag}>
-                          📱 {job.application_method === 'whatsapp' ? 'WhatsApp' : 'Phone'}
+                          📱 {job.application_method === 'whatsapp' ? 'WhatsApp' : 'Platform'}
                         </span>
                       </div>
 

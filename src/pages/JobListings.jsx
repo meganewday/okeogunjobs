@@ -374,7 +374,7 @@ export default function JobListings() {
                       {job.location && <span style={{ fontSize:12, color:'#4b6358', background:'#f0fdf4', padding:'4px 10px', borderRadius:20, border:'1px solid #dcfce7' }}>📍 {job.location}</span>}
                       {job.lga      && <span style={{ fontSize:12, color:'#4b6358', background:'#f0fdf4', padding:'4px 10px', borderRadius:20, border:'1px solid #dcfce7' }}>🏛 {job.lga}</span>}
                       <span style={{ fontSize:12, color:'#4b6358', background:'#f0fdf4', padding:'4px 10px', borderRadius:20, border:'1px solid #dcfce7' }}>
-                        📱 {job.application_method === 'whatsapp' ? 'WhatsApp' : 'Phone'}
+                        📱 {job.application_method === 'whatsapp' ? 'WhatsApp' : 'Platform'}
                       </span>
                     </div>
 

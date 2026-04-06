@@ -35,7 +35,6 @@ const LABOUR_OPTIONS = [
 const APPLICATION_METHODS = [
   { value: 'platform', label: '🖥 Apply on Platform', desc: 'Seekers apply directly through OkeOgunJobs' },
   { value: 'whatsapp', label: '💬 Apply via WhatsApp', desc: 'Seekers contact you directly on WhatsApp' },
-  { value: 'both',     label: '✅ Both',               desc: 'Seekers can choose either method' },
 ]
 
 // ─── Global CSS ───────────────────────────────────────────────────────────────
