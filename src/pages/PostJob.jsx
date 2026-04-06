@@ -213,6 +213,12 @@ export default function PostJob() {
     if (labourType !== 'internship' && !form.job_type) { setError('Please select a job type.'); return }
     if (!form.application_method && labourType !== 'internship') { setError('Please select an application method.'); return }
 
+    // Check if employer account is approved
+    if (employerProfile?.status !== 'approved') {
+      setError('Your account is pending approval. You cannot post jobs until your account is approved by our team. This usually takes no more than 24 hours.')
+      return
+    }
+
     setSubmitting(true)
     try {
       const { allowed, error: captchaError } = await verifyRecaptcha('post_job')
