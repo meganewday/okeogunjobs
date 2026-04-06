@@ -23,6 +23,7 @@ import EmployerUpdatePassword from './pages/EmployerUpdatePassword'
 import EmployerDashboard from './pages/EmployerDashboard'
 import EmployerApplications from './pages/EmployerApplications'
 import EmployerEmployees from './pages/EmployerEmployees'
+import UpgradePlan from './pages/UpgradePlan'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import FAQ from './pages/FAQ'
 import Unsubscribe from './pages/Unsubscribe'
@@ -68,6 +69,7 @@ function App() {
               <Route path="/employer/dashboard" element={<EmployerDashboard />} />
               <Route path="/employer/applications/:jobId" element={<EmployerApplications />} />
               <Route path="/employer/employees" element={<EmployerEmployees />} />
+              <Route path="/employer/upgrade" element={<UpgradePlan />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminDashboard />} />
             </Routes>

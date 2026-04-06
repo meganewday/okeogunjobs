@@ -117,6 +117,7 @@ export default function AdminDashboard() {
   const approvedSeekers = jobSeekers.filter(s => s.status === 'approved')
   const pendingEmployers = employers.filter(e => e.status === 'pending')
   const approvedEmployers = employers.filter(e => e.status === 'approved')
+  const activePaidEmployers = employers.filter(e => e.is_paid_featured && e.paid_featured_until && new Date(e.paid_featured_until) > new Date())
 
   function statusBadge(status) {
     const colors = {
@@ -131,6 +132,32 @@ export default function AdminDashboard() {
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     )
+  }
+
+  function isEmployerSubscriptionActive(employer) {
+    return Boolean(employer?.is_paid_featured && employer?.paid_featured_until && new Date(employer.paid_featured_until) > new Date())
+  }
+
+  async function updateEmployerSubscription(employerId, grant = true, days = 30) {
+    const employer = employers.find(e => e.id === employerId)
+    if (!employer) return
+
+    const currentExpiry = employer.paid_featured_until ? new Date(employer.paid_featured_until) : new Date()
+    const now = new Date()
+    const baseDate = currentExpiry > now ? currentExpiry : now
+    const nextExpiry = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000).toISOString()
+
+    const updates = {
+      is_paid_featured: grant,
+      paid_featured_until: grant ? nextExpiry : null,
+    }
+
+    const { error } = await supabase
+      .from('employers')
+      .update(updates)
+      .eq('id', employerId)
+
+    if (!error) fetchEmployers()
   }
 
   if (loading) {
@@ -158,6 +185,10 @@ export default function AdminDashboard() {
         <div style={styles.statCard}>
           <p style={styles.statNumber}>{pendingEmployers.length}</p>
           <p style={styles.statLabel}>Pending Employers</p>
+        </div>
+        <div style={styles.statCard}>
+          <p style={styles.statNumber}>{activePaidEmployers.length}</p>
+          <p style={styles.statLabel}>Active Paid Employers</p>
         </div>
         <div style={styles.statCard}>
           <p style={styles.statNumber}>{pendingJobs.length}</p>
@@ -226,6 +257,11 @@ export default function AdminDashboard() {
               {employer.email && (
                 <p style={styles.cardDetail}><strong>Email:</strong> {employer.email}</p>
               )}
+              {employer.is_paid_featured && employer.paid_featured_until && new Date(employer.paid_featured_until) > new Date() ? (
+                <p style={styles.cardDetail}><strong>Paid Access Until:</strong> {new Date(employer.paid_featured_until).toLocaleDateString()}</p>
+              ) : (
+                <p style={{ ...styles.cardDetail, color: '#b45309', fontWeight: 700 }}><strong>Paid access inactive</strong></p>
+              )}
               {employer.business_type && (
                 <p style={styles.cardDetail}><strong>Business Type:</strong> {employer.business_type}</p>
               )}
@@ -246,6 +282,16 @@ export default function AdminDashboard() {
                   <button onClick={() => updateEmployerStatus(employer.id, 'rejected')} style={styles.rejectBtn}>Reject</button>
                 </div>
               )}
+              <div style={styles.actionRow}>
+                {isEmployerSubscriptionActive(employer) ? (
+                  <>
+                    <button onClick={() => updateEmployerSubscription(employer.id, false)} style={styles.rejectBtn}>Revoke Paid Access</button>
+                    <button onClick={() => updateEmployerSubscription(employer.id, true, 30)} style={styles.approveBtn}>Extend Paid Access 30d</button>
+                  </>
+                ) : (
+                  <button onClick={() => updateEmployerSubscription(employer.id, true, 30)} style={styles.approveBtn}>Grant Paid Access 30d</button>
+                )}
+              </div>
               {employer.status === 'approved' && (
                 <div style={styles.actionRow}>
                   <button onClick={() => updateEmployerStatus(employer.id, 'suspended')} style={styles.suspendBtn}>Suspend</button>

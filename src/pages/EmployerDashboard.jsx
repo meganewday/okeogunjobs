@@ -39,6 +39,15 @@ function DetailRow({ label, value }) {
   )
 }
 
+function hasPaidHrAccess(profile) {
+  if (!profile) return false
+  if (profile.paid_featured_until) {
+    const expiry = new Date(profile.paid_featured_until)
+    return expiry > new Date()
+  }
+  return profile.is_paid_featured === true
+}
+
 const detailRowStyles = {
   row: { display: 'flex', flexDirection: 'column', marginBottom: '16px' },
   label: { fontSize: '12px', fontWeight: '700', color: '#888', textTransform: 'uppercase', marginBottom: '2px' },
@@ -79,6 +88,7 @@ export default function EmployerDashboard() {
   const [activeTab, setActiveTab] = useState('listings')
   const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0, closed: 0 })
   const [employeeCount, setEmployeeCount] = useState(0)
+  const hasHrAccess = hasPaidHrAccess(employerProfile)
 
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoError, setLogoError] = useState('')
@@ -342,9 +352,20 @@ export default function EmployerDashboard() {
                   <span style={styles.teamStatLabel}>Active Employees</span>
                 </div>
               </div>
-              <Link to="/employer/employees" style={styles.teamBtn}>
-                Manage My Team →
-              </Link>
+              {hasHrAccess ? (
+                <Link to="/employer/employees" style={styles.teamBtn}>
+                  Manage My Team →
+                </Link>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '18px' }}>
+                  <div style={{ background: '#fff7ed', color: '#b45309', padding: '14px 16px', borderRadius: '14px', border: '1px solid #fde3c7' }}>
+                    HR & Employee Management is a paid feature. Upgrade your plan to manage your workforce and store employee records.
+                  </div>
+                  <Link to="/employer/upgrade" style={{ ...styles.teamBtn, background: '#f97316', borderColor: '#fb923c', color: '#fff' }}>
+                    Learn how to upgrade
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}

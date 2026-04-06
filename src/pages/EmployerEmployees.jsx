@@ -40,6 +40,15 @@ const STATUS_STYLES = {
   terminated: { bg: '#fee2e2', color: '#b91c1c' },
 }
 
+function hasPaidHrAccess(profile) {
+  if (!profile) return false
+  if (profile.paid_featured_until) {
+    const expiry = new Date(profile.paid_featured_until)
+    return expiry > new Date()
+  }
+  return profile.is_paid_featured === true
+}
+
 const EMPTY_FORM = {
   full_name: '',
   role: '',
@@ -58,6 +67,7 @@ export default function EmployerEmployees() {
   const { employer, employerProfile, employerLoading, employerSignOut } = useEmployerAuth()
   const navigate = useNavigate()
   const isDesktop = useIsDesktop()
+  const hasHrAccess = hasPaidHrAccess(employerProfile)
 
   const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
@@ -83,8 +93,14 @@ export default function EmployerEmployees() {
   }, [employer, employerLoading, navigate])
 
   useEffect(() => {
-    if (employerProfile) fetchEmployees()
-  }, [employerProfile])
+    if (!employerProfile) return
+    if (hasHrAccess) {
+      fetchEmployees()
+    } else {
+      setEmployees([])
+      setLoading(false)
+    }
+  }, [employerProfile, hasHrAccess])
 
   async function fetchEmployees() {
     setLoading(true)
@@ -216,6 +232,34 @@ export default function EmployerEmployees() {
     return (
       <div style={styles.centred}>
         <p style={styles.loadingText}>Loading...</p>
+      </div>
+    )
+  }
+
+  if (!hasHrAccess) {
+    return (
+      <div style={styles.page}>
+        <div style={{ maxWidth: '760px', margin: '0 auto', padding: '40px 24px' }}>
+          <div style={styles.paywallCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
+              <div style={styles.paywallIcon}>🔒</div>
+              <div>
+                <h1 style={styles.paywallTitle}>HR & Employee Management is a paid feature</h1>
+                <p style={styles.paywallSubtitle}>
+                  This feature is only available for paid employers. Upgrade your account to manage employees, track statuses, and keep workforce records in one place.
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <Link to="/employer/upgrade" style={styles.paywallBtnPrimary}>
+                Upgrade Plan
+              </Link>
+              <Link to="/employer/dashboard" style={styles.paywallBtnSecondary}>
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -573,4 +617,10 @@ const styles = {
   emptyCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '48px 24px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   emptyTitle: { fontSize: '16px', fontWeight: '700', color: '#222', marginBottom: '8px' },
   emptyText: { fontSize: '14px', color: '#888', marginBottom: '20px' },
+  paywallCard: { backgroundColor: '#fff', borderRadius: '18px', padding: '32px', border: '1px solid #fde3c7', boxShadow: '0 2px 12px rgba(251, 191, 116, 0.16)' },
+  paywallIcon: { width: '54px', height: '54px', borderRadius: '18px', backgroundColor: '#fef3c7', color: '#b45309', display: 'grid', placeItems: 'center', fontSize: '24px' },
+  paywallTitle: { fontSize: '22px', fontWeight: '800', color: '#1f2937', margin: 0 },
+  paywallSubtitle: { fontSize: '14px', color: '#4b5563', margin: '8px 0 0' },
+  paywallBtnPrimary: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '12px 22px', borderRadius: '12px', backgroundColor: '#1a6b3c', color: '#fff', textDecoration: 'none', fontWeight: '700' },
+  paywallBtnSecondary: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '12px 22px', borderRadius: '12px', backgroundColor: '#f0fdf4', color: '#166534', textDecoration: 'none', border: '1px solid #bbf7d0', fontWeight: '700' },
 }
