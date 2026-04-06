@@ -1,456 +1,219 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
-import { APP_NAME } from '../config/constants'
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { Building2, Mail, Lock, User, Phone, MapPin, Briefcase, Calendar, ChevronRight, ChevronLeft, AlertCircle } from 'lucide-react';
 
-const LGAs = [
-  'Saki West', 'Saki East', 'Atisbo', 'Oorelope', 'Olorunsogo',
-  'Iseyin', 'Itesiwaju', 'Kajola', 'Iwajowa',
-]
+const EmployerSignup = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    organization_name: '',
+    contact_person: '',
+    phone_number: '',
+    business_type: 'Sole Proprietorship',
+    year_registered: new Date().getFullYear().toString(),
+    lga: 'Iseyin',
+    description: ''
+  });
 
-const INDUSTRIES = [
-  'Agriculture / Farming', 'Construction / Real Estate', 'Education / Training',
-  'Healthcare / Medical', 'Hospitality / Food & Beverage', 'Manufacturing / Production',
-  'Retail / Trade', 'Security / Safety', 'Technology / ICT', 'Transport / Logistics',
-  'NGO / Community Organisation', 'Government / Public Service', 'Other',
-]
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-const BUSINESS_TYPES = [
-  'Sole Proprietorship', 'Partnership', 'Private Limited Company (Ltd)',
-  'Public Limited Company (PLC)', 'NGO / Non-Profit', 'Government Agency', 'Other',
-]
-
-// ─── Global CSS ───────────────────────────────────────────────────────────────
-const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
-  * { box-sizing: border-box; }
-  .oj-input {
-    width: 100%; padding: 11px 14px; font-size: 14px;
-    font-family: 'Outfit', sans-serif;
-    border: 1.5px solid #dcfce7; border-radius: 12px;
-    background: #f0fdf4; color: #14532d; outline: none;
-    transition: border 0.15s, box-shadow 0.15s;
-  }
-  .oj-input::placeholder { color: #9ca3af; }
-  .oj-input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.12); background: #fff; }
-  .oj-btn {
-    display: inline-block; padding: 13px 28px;
-    background: #16a34a; color: #fff; font-size: 15px; font-weight: 700;
-    font-family: 'Outfit', sans-serif; border: none; border-radius: 50px;
-    cursor: pointer; text-decoration: none; text-align: center;
-    box-shadow: 0 2px 8px rgba(22,163,74,0.18);
-    transition: transform 0.15s, box-shadow 0.15s;
-  }
-  .oj-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 12px rgba(22,163,74,0.22); }
-  .oj-btn:disabled, .oj-btn-disabled { background: #9ca3af !important; cursor: not-allowed !important; box-shadow: none !important; }
-  .oj-back-btn {
-    padding: 13px 20px; background: #fff; color: #4b6358;
-    border: 1.5px solid #dcfce7; border-radius: 50px; cursor: pointer;
-    font-size: 15px; font-weight: 700; font-family: 'Outfit', sans-serif;
-    transition: all 0.15s;
-  }
-  .oj-back-btn:hover { background: #f0fdf4; }
-`
-
-function LogoMark() {
-  return (
-    <Link to="/" style={{ display:'inline-flex', alignItems:'center', gap:8, textDecoration:'none', marginBottom:24 }}>
-      <img src="/logo.png" alt="OkeOgunJobs" style={{ height:36, width:'auto', borderRadius:7 }} />
-      <span style={{ fontFamily:"'Outfit',sans-serif", fontSize:17, fontWeight:900, letterSpacing:'-0.02em' }}>
-        <span style={{ color:'#14532d' }}>Oke-Ogun </span>
-        <span style={{ color:'#16a34a' }}>Jobs</span>
-      </span>
-    </Link>
-  )
-}
-
-function FieldLabel({ children, required }) {
-  return (
-    <label style={{ display:'block', fontSize:13, fontWeight:700, color:'#166634', marginBottom:7 }}>
-      {children}{required && ' *'}
-    </label>
-  )
-}
-
-export default function EmployerSignup() {
-  const [step, setStep]       = useState(1)
-  const [account, setAccount] = useState({ email:'', password:'', confirmPassword:'' })
-  const [profile, setProfile] = useState({
-    organization_name:'', contact_person:'', phone_number:'',
-    lga:'', industry:'', description:'', cac_number:'',
-    business_type:'', year_registered:'',
-  })
-  const [logoFile, setLogoFile]         = useState(null)
-  const [logoPreview, setLogoPreview]   = useState(null)
-  const [logoError, setLogoError]       = useState('')
-  const [submitting, setSubmitting]     = useState(false)
-  const [checkingCac, setCheckingCac]   = useState(false)
-  const [sent, setSent]                 = useState(false)
-  const [sentEmail, setSentEmail]       = useState('')
-  const [error, setError]               = useState('')
-
-  function handleAccountChange(e) {
-    const { name, value } = e.target
-    setAccount(prev => ({ ...prev, [name]: value }))
-  }
-
-  function handleProfileChange(e) {
-    const { name, value } = e.target
-    setProfile(prev => ({ ...prev, [name]: value }))
-  }
-
-  function handleLogoChange(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    const allowed = ['image/jpeg', 'image/png', 'image/webp']
-    if (!allowed.includes(file.type)) { setLogoError('Only JPG, PNG or WebP images are allowed.'); return }
-    if (file.size > 2 * 1024 * 1024) { setLogoError('Logo must be under 2MB.'); return }
-    setLogoError('')
-    setLogoFile(file)
-    setLogoPreview(URL.createObjectURL(file))
-  }
-
-  function handleStep1(e) {
-    e.preventDefault()
-    setError('')
-    if (!account.email || !account.password) { setError('Email and password are required.'); return }
-    if (account.password.length < 8) { setError('Password must be at least 8 characters.'); return }
-    if (account.password !== account.confirmPassword) { setError('Passwords do not match.'); return }
-    setStep(2)
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-
-    if (!profile.organization_name || !profile.contact_person || !profile.phone_number) {
-      setError('Organisation name, contact person, and phone number are required.')
-      return
-    }
-    if (!logoFile) {
-      setError('A company logo is required.')
-      return
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // If on step 1, just move to step 2
+    if (step === 1) {
+      setStep(2);
+      return;
     }
 
-    // CAC duplicate check
-    const cacValue = profile.cac_number.trim()
-    if (cacValue) {
-      setCheckingCac(true)
-      const { data: existingCac } = await supabase
-        .from('employers').select('id').eq('cac_number', cacValue).maybeSingle()
-      setCheckingCac(false)
-      if (existingCac) {
-        setError('This CAC number is already registered. If this is your business and you have lost access to your account, contact us for help.')
-        return
-      }
+    // Final Submission Logic
+    setLoading(true);
+    setError(null);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
     }
 
-    setSubmitting(true)
     try {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: account.email.trim(),
-        password: account.password,
-        options: { emailRedirectTo: `${window.location.origin}/employer/email-confirmed` },
-      })
-      if (signUpError) throw signUpError
-
-      if (signUpData?.user?.identities?.length === 0) {
-        setError('An account with this email already exists. Try logging in instead.')
-        setSubmitting(false)
-        return
-      }
-
-      // Upload logo
-      let logo_url = null
-      const logoExt  = logoFile.name.split('.').pop()
-      const logoName = `logo_${Date.now()}_${Math.random().toString(36).substring(2)}.${logoExt}`
-      const { error: logoUploadError } = await supabase.storage.from('logos').upload(logoName, logoFile, { upsert: true })
-      if (logoUploadError) throw logoUploadError
-      const { data: logoUrlData } = supabase.storage.from('logos').getPublicUrl(logoName)
-      logo_url = logoUrlData.publicUrl
-
-      const userId = signUpData.user?.id
-      if (userId) {
-        const insertPayload = {
-          auth_user_id:      userId,
-          organization_name: profile.organization_name.trim(),
-          contact_person:    profile.contact_person.trim(),
-          phone_number:      profile.phone_number.trim(),
-          email:             account.email.trim(),
-          lga:               profile.lga || null,
-          industry:          profile.industry || null,
-          description:       profile.description.trim() || null,
-          cac_number:        cacValue || null,
-          business_type:     profile.business_type || null,
-          year_registered:   profile.year_registered.trim() || null,
-          logo_url,
-          status: 'pending',
+      // 1. Sign up the user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            role: 'employer',
+            organization_name: formData.organization_name
+          }
         }
+      });
 
-        const { error: insertError } = await supabase.from('employers').insert(insertPayload)
-        if (insertError) {
-          // RLS blocked — save locally for recovery on first login
-          try { localStorage.setItem('okeogun_pending_employer', JSON.stringify(insertPayload)) } catch (_) {}
-        }
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // 2. Insert into the 'employers' table
+        // This uses 'auth_user_id' to match your exact DB schema
+        const { error: profileError } = await supabase
+          .from('employers')
+          .insert([
+            {
+              auth_user_id: authData.user.id, 
+              organization_name: formData.organization_name,
+              contact_person: formData.contact_person,
+              phone_number: formData.phone_number,
+              business_type: formData.business_type,
+              year_registered: formData.year_registered,
+              lga: formData.lga,
+              description: formData.description,
+              status: 'pending'
+            }
+          ]);
+
+        if (profileError) throw profileError;
+        
+        // Success - Redirect to login with instructions
+        navigate('/employer/login', { 
+          state: { message: 'Registration successful! Please check your email to verify your account.' } 
+        });
       }
-
-      setSentEmail(account.email.trim())
-      setSent(true)
     } catch (err) {
-      if (err.message?.includes('already registered')) {
-        setError('An account with this email already exists. Try logging in instead.')
-      } else {
-        setError(err.message || 'Something went wrong. Please try again.')
-      }
+      setError(err.message);
     } finally {
-      setSubmitting(false)
+      setLoading(false);
     }
-  }
-
-  const pageStyle = {
-    minHeight:'100vh',
-    background:'linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#bbf7d0 100%)',
-    display:'flex', alignItems:'center', justifyContent:'center',
-    padding:'40px 24px', fontFamily:"'Outfit',sans-serif",
-  }
-  const cardStyle = {
-    background:'#fff', borderRadius:24,
-    padding:'40px 36px', width:'100%', maxWidth:500,
-    border:'1.5px solid #dcfce7',
-    boxShadow:'0 8px 32px rgba(22,163,74,0.1)',
-  }
-
-  // ── Confirmation sent ─────────────────────────────────────────────────────
-  if (sent) {
-    return (
-      <div style={pageStyle}>
-        <style>{CSS}</style>
-        <div style={{ ...cardStyle, textAlign:'center' }}>
-          
-          <div style={{ fontSize:52, marginBottom:16 }}>✉️</div>
-          <h1 style={{ fontSize:22, fontWeight:900, color:'#14532d', margin:'0 0 12px' }}>Check your email</h1>
-          <p style={{ fontSize:14, color:'#4b6358', lineHeight:1.7, margin:'0 0 10px' }}>
-            We sent a confirmation link to <strong style={{ color:'#14532d' }}>{sentEmail}</strong>. Open the link to activate your employer account, then come back to post your first job.
-          </p>
-          <p style={{ fontSize:13, color:'#9ca3af', margin:'0 0 28px' }}>
-            Check your spam folder if you do not see it within a few minutes.
-          </p>
-          <Link to="/employer/login" className="oj-btn" style={{ display:'block', width:'100%' }}>Go to Employer Login</Link>
-        </div>
-      </div>
-    )
-  }
+  };
 
   return (
-    <div style={pageStyle}>
-      <style>{CSS}</style>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <h2 className="text-3xl font-extrabold text-gray-900">Employer Registration</h2>
+        <p className="mt-2 text-sm text-gray-600">Step {step} of 2</p>
+      </div>
 
-      <div style={cardStyle}>
-        
-        {/* Employer badge */}
-        <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#dcfce7', color:'#166534', borderRadius:50, padding:'5px 14px', fontSize:12, fontWeight:700, marginBottom:20 }}>
-          🏢 Employer Registration
-        </div>
-
-        {/* Step indicator */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', marginBottom:28, gap:0 }}>
-          {[1, 2].map((s, i) => (
-            <div key={s} style={{ display:'flex', alignItems:'center' }}>
-              <div style={{
-                width:36, height:36, borderRadius:'50%', fontSize:14, fontWeight:800,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                background: step >= s ? '#16a34a' : '#f0fdf4',
-                color: step >= s ? '#fff' : '#9ca3af',
-                border: `2px solid ${step >= s ? '#16a34a' : '#dcfce7'}`,
-                transition:'all 0.2s',
-              }}>
-                {step > s ? '✓' : s}
-              </div>
-              {i === 0 && (
-                <div style={{ width:52, height:2, background: step > 1 ? '#16a34a' : '#dcfce7', transition:'background 0.3s' }} />
-              )}
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {error && (
+            <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+              <p className="text-sm text-red-700">{error}</p>
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* ── STEP 1 — Account ───────────────────────────────────────────── */}
-        {step === 1 && (
-          <>
-            <h1 style={{ fontSize:21, fontWeight:900, color:'#14532d', margin:'0 0 8px', textAlign:'center' }}>
-              Create an employer account
-            </h1>
-            <p style={{ fontSize:14, color:'#4b6358', lineHeight:1.65, margin:'0 0 24px', textAlign:'center' }}>
-              Sign up to post jobs and manage applications on {APP_NAME}. You will confirm your email before logging in.
-            </p>
-
-            <form onSubmit={handleStep1}>
-              {[
-                { label:'Email Address', name:'email',           type:'email',    placeholder:'contact@yourorganisation.com', ac:'email',        required:true },
-                { label:'Password',      name:'password',        type:'password', placeholder:'At least 8 characters',        ac:'new-password', required:true },
-                { label:'Confirm Password', name:'confirmPassword', type:'password', placeholder:'Repeat your password',      ac:'new-password', required:true },
-              ].map(f => (
-                <div key={f.name} style={{ marginBottom:18 }}>
-                  <FieldLabel required={f.required}>{f.label}</FieldLabel>
-                  <input className="oj-input" type={f.type} name={f.name}
-                    value={account[f.name]} onChange={handleAccountChange}
-                    placeholder={f.placeholder} autoComplete={f.ac} />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {step === 1 ? (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Organization Name</label>
+                  <div className="mt-1 relative">
+                    <Building2 className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <input name="organization_name" type="text" required value={formData.organization_name} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5 focus:ring-primary-500 focus:border-primary-500" placeholder="e.g. Vibe Studio" />
+                  </div>
                 </div>
-              ))}
 
-              {error && (
-                <div style={{ background:'#fee2e2', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16, fontWeight:600 }}>
-                  {error}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email Address</label>
+                  <div className="mt-1 relative">
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <input name="email" type="email" required value={formData.email} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5 focus:ring-primary-500 focus:border-primary-500" placeholder="hr@organization.com" />
+                  </div>
                 </div>
-              )}
 
-              <button type="submit" className="oj-btn" style={{ width:'100%' }}>
-                Continue →
-              </button>
-            </form>
-          </>
-        )}
-
-        {/* ── STEP 2 — Organisation details ─────────────────────────────── */}
-        {step === 2 && (
-          <>
-            <h1 style={{ fontSize:21, fontWeight:900, color:'#14532d', margin:'0 0 8px', textAlign:'center' }}>
-              Your organisation details
-            </h1>
-            <p style={{ fontSize:14, color:'#4b6358', lineHeight:1.65, margin:'0 0 24px', textAlign:'center' }}>
-              This information will be saved to your profile and attached to every job you post.
-            </p>
-
-            <form onSubmit={handleSubmit}>
-
-              {/* ── COMPANY LOGO ──────────────────────────────────────── */}
-              <div style={{ marginBottom:24 }}>
-                <FieldLabel required>Company Logo</FieldLabel>
-                <p style={{ fontSize:13, color:'#9ca3af', margin:'0 0 12px' }}>
-                  JPG, PNG or WebP, max 2MB. Shown on your listings and employer profile.
-                </p>
-                <div style={{ display:'flex', alignItems:'center', gap:18, flexWrap:'wrap' }}>
-                  {/* Preview */}
-                  <div style={{ width:72, height:72, borderRadius:14, border:'2px solid #dcfce7', overflow:'hidden', flexShrink:0, background:'#f0fdf4', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    {logoPreview ? (
-                      <img src={logoPreview} alt="Logo preview" style={{ width:'100%', height:'100%', objectFit:'contain' }} />
-                    ) : (
-                      <span style={{ fontSize:28 }}>🏢</span>
-                    )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Password</label>
+                    <div className="mt-1 relative">
+                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <input name="password" type="password" required value={formData.password} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5" />
+                    </div>
                   </div>
                   <div>
-                    <label style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:50, border:'1.5px solid #bbf7d0', background:'#f0fdf4', fontSize:13, fontWeight:700, color:'#16a34a', cursor:'pointer', fontFamily:"'Outfit',sans-serif" }}>
-                      🖼 {logoFile ? 'Change Logo' : 'Upload Logo *'}
-                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoChange} style={{ display:'none' }} />
-                    </label>
-                    {logoFile && <p style={{ fontSize:12, color:'#16a34a', marginTop:6, fontWeight:600 }}>✓ {logoFile.name}</p>}
-                    {logoError && <p style={{ fontSize:12, color:'#dc2626', marginTop:6 }}>{logoError}</p>}
+                    <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
+                    <div className="mt-1 relative">
+                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <input name="confirmPassword" type="password" required value={formData.confirmPassword} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Core details */}
-              {[
-                { label:'Organisation / Business Name', name:'organization_name', type:'text', placeholder:'e.g. Saki Farms Ltd, ABC Clinic', required:true },
-                { label:'Contact Person',               name:'contact_person',    type:'text', placeholder:'Full name of the hiring contact', required:true },
-                { label:'Phone Number',                 name:'phone_number',      type:'tel',  placeholder:'e.g. 08012345678', required:true },
-              ].map(f => (
-                <div key={f.name} style={{ marginBottom:18 }}>
-                  <FieldLabel required={f.required}>{f.label}</FieldLabel>
-                  <input className="oj-input" type={f.type} name={f.name}
-                    value={profile[f.name]} onChange={handleProfileChange}
-                    placeholder={f.placeholder} />
-                </div>
-              ))}
-
-              <div style={{ marginBottom:18 }}>
-                <FieldLabel>LGA</FieldLabel>
-                <select className="oj-input" name="lga" value={profile.lga} onChange={handleProfileChange}>
-                  <option value="">Select LGA</option>
-                  {LGAs.map(lga => <option key={lga} value={lga}>{lga}</option>)}
-                </select>
-              </div>
-
-              <div style={{ marginBottom:18 }}>
-                <FieldLabel>Industry / Sector</FieldLabel>
-                <select className="oj-input" name="industry" value={profile.industry} onChange={handleProfileChange}>
-                  <option value="">Select industry</option>
-                  {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                </select>
-              </div>
-
-              <div style={{ marginBottom:18 }}>
-                <FieldLabel>Brief Description (optional)</FieldLabel>
-                <textarea
-                  className="oj-input"
-                  style={{ height:90, resize:'vertical' }}
-                  name="description"
-                  value={profile.description}
-                  onChange={handleProfileChange}
-                  placeholder="One or two sentences about what your organisation does"
-                />
-              </div>
-
-              {/* CAC section */}
-              <div style={{ background:'#f0fdf4', border:'1.5px solid #dcfce7', borderRadius:16, padding:'20px', marginBottom:20 }}>
-                <p style={{ fontSize:14, fontWeight:800, color:'#16a34a', margin:'0 0 6px' }}>CAC Registration (optional)</p>
-                <p style={{ fontSize:13, color:'#4b6358', lineHeight:1.55, margin:'0 0 16px' }}>
-                  If your business is registered with the Corporate Affairs Commission, enter the details below. Each CAC number can only be registered once.
-                </p>
-                <div style={{ marginBottom:14 }}>
-                  <FieldLabel>CAC Registration Number</FieldLabel>
-                  <input className="oj-input" type="text" name="cac_number"
-                    value={profile.cac_number} onChange={handleProfileChange}
-                    placeholder="e.g. RC1234567 or BN1234567" />
-                </div>
-                <div style={{ marginBottom:14 }}>
-                  <FieldLabel>Business Type</FieldLabel>
-                  <select className="oj-input" name="business_type" value={profile.business_type} onChange={handleProfileChange}>
-                    <option value="">Select business type</option>
-                    {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <FieldLabel>Year Registered</FieldLabel>
-                  <input className="oj-input" type="text" name="year_registered"
-                    value={profile.year_registered} onChange={handleProfileChange}
-                    placeholder="e.g. 2018" maxLength={4} />
-                </div>
-              </div>
-
-              {error && (
-                <div style={{ background:'#fee2e2', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16, fontWeight:600 }}>
-                  {error}
-                </div>
-              )}
-
-              <div style={{ display:'flex', gap:10 }}>
-                <button type="button" onClick={() => { setStep(1); setError('') }} className="oj-back-btn">
-                  ← Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || checkingCac}
-                  className={`oj-btn${submitting || checkingCac ? ' oj-btn-disabled' : ''}`}
-                  style={{ flex:1 }}
-                >
-                  {checkingCac ? 'Checking...' : submitting ? 'Creating account...' : 'Create Employer Account'}
+                <button type="submit" className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                  Next Step <ChevronRight className="ml-2 h-4 w-4" />
                 </button>
               </div>
-            </form>
-          </>
-        )}
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Contact Person</label>
+                    <div className="mt-1 relative">
+                      <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <input name="contact_person" type="text" required value={formData.contact_person} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <div className="mt-1 relative">
+                      <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <input name="phone_number" type="tel" required value={formData.phone_number} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5" />
+                    </div>
+                  </div>
+                </div>
 
-        <div style={{ marginTop:24, display:'flex', flexDirection:'column', gap:10, alignItems:'center' }}>
-          <p style={{ fontSize:13, color:'#4b6358', margin:0 }}>
-            Already have an employer account?{' '}
-            <Link to="/employer/login" style={{ color:'#16a34a', fontWeight:700, textDecoration:'none' }}>Log in</Link>
-          </p>
-          <p style={{ fontSize:13, color:'#9ca3af', margin:0 }}>
-            Looking for work?{' '}
-            <Link to="/signup" style={{ color:'#16a34a', fontWeight:600, textDecoration:'none' }}>Register as a job seeker</Link>
-          </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">LGA (Oke-Ogun)</label>
+                    <div className="mt-1 relative">
+                      <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <select name="lga" value={formData.lga} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5">
+                        <option value="Iseyin">Iseyin</option>
+                        <option value="Itesiwaju">Itesiwaju</option>
+                        <option value="Iwajowa">Iwajowa</option>
+                        <option value="Kajola">Kajola</option>
+                        <option value="Atisbo">Atisbo</option>
+                        <option value="Saki East">Saki East</option>
+                        <option value="Saki West">Saki West</option>
+                        <option value="Oorelope">Oorelope</option>
+                        <option value="Irepo">Irepo</option>
+                        <option value="Olorunsogo">Olorunsogo</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Business Type</label>
+                    <div className="mt-1 relative">
+                      <Briefcase className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <select name="business_type" value={formData.business_type} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5">
+                        <option value="Sole Proprietorship">Sole Proprietorship</option>
+                        <option value="Partnership">Partnership</option>
+                        <option value="Private Limited Company">Private Limited Company</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-4">
+                  <button type="button" onClick={() => setStep(1)} className="w-1/3 flex justify-center items-center py-3 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50">
+                    <ChevronLeft className="mr-1 h-4 w-4" /> Back
+                  </button>
+                  <button type="submit" disabled={loading} className="w-2/3 py-3 border border-transparent rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 font-medium">
+                    {loading ? 'Creating Account...' : 'Complete Signup'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default EmployerSignup;
