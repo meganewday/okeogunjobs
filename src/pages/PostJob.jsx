@@ -147,7 +147,7 @@ function SkillsSection({ categories, selectedSkills, onToggle, customSkills, onC
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PostJob() {
-  const { employer, employerProfile, employerLoading } = useEmployerAuth()
+  const { employer, employerProfile, employerLoading, refreshEmployerProfile } = useEmployerAuth()
   const navigate  = useNavigate()
   const isDesktop = useIsDesktop()
 
@@ -163,6 +163,7 @@ export default function PostJob() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess]       = useState(false)
   const [error, setError]           = useState('')
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     if (!employerLoading && !employer) navigate('/employer/login?next=post-job')
@@ -202,6 +203,18 @@ export default function PostJob() {
     setLabourType(type)
     setForm(prev => ({ ...prev, selectedSkills: [], application_method: '' }))
     setCustomSkills({})
+  }
+
+  async function handleRefreshProfile() {
+    setRefreshing(true)
+    setError('')
+    try {
+      await refreshEmployerProfile()
+    } catch (err) {
+      setError('Failed to refresh profile. Please try reloading the page.')
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   async function handleSubmit(e) {
@@ -263,8 +276,17 @@ export default function PostJob() {
 
       setSuccess(true)
     } catch (err) {
-      console.error(err)
-      setError('Something went wrong. Please try again.')
+      console.error('Job posting error:', err)
+      let errorMsg = err?.message || err?.toString() || 'Something went wrong'
+      
+      // Provide more helpful error messages
+      if (errorMsg.includes('permission') || errorMsg.includes('policy') || errorMsg.includes('RLS')) {
+        errorMsg = 'Permission denied. Your account may still be pending approval. Try refreshing the page.'
+      } else if (errorMsg.includes('duplicate') || errorMsg.includes('unique')) {
+        errorMsg = 'A similar job listing already exists. Please check your job postings.'
+      }
+      
+      setError(`Failed to post job: ${errorMsg}`)
     } finally {
       setSubmitting(false)
     }
@@ -330,7 +352,7 @@ export default function PostJob() {
         {/* Employer profile card */}
         {employerProfile && (
           <div style={{ background:'#fff', border:'1.5px solid #dcfce7', borderRadius:16, padding:'14px 18px', marginBottom:24, display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, flex:1 }}>
               {employerProfile.logo_url ? (
                 <img src={employerProfile.logo_url} alt="logo" style={{ width:44, height:44, borderRadius:10, objectFit:'contain', border:'1.5px solid #dcfce7' }} />
               ) : (
@@ -339,13 +361,27 @@ export default function PostJob() {
                 </div>
               )}
               <div>
-                <p style={{ fontSize:14, fontWeight:800, color:'#14532d', margin:0 }}>{employerProfile.organization_name}</p>
+                <p style={{ fontSize:14, fontWeight:800, color:'#14532d', margin:0 }}>
+                  {employerProfile.organization_name}
+                  {employerProfile.status === 'approved' && <span style={{ fontSize:12, marginLeft:8, color:'#16a34a', fontWeight:700 }}>✓ Approved</span>}
+                  {employerProfile.status === 'pending' && <span style={{ fontSize:12, marginLeft:8, color:'#f59e0b', fontWeight:700 }}>⏳ Pending Review</span>}
+                </p>
                 <p style={{ fontSize:12, color:'#9ca3af', margin:'2px 0 0' }}>
                   {[employerProfile.contact_person, employerProfile.lga, employerProfile.industry].filter(Boolean).join(' · ')}
                 </p>
               </div>
             </div>
-            <Link to="/employer/dashboard" style={{ fontSize:13, color:'#16a34a', fontWeight:700, textDecoration:'none' }}>Edit profile</Link>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              <button
+                type="button"
+                onClick={handleRefreshProfile}
+                disabled={refreshing}
+                style={{ padding:'8px 14px', fontSize:12, fontWeight:700, borderRadius:8, border:'1.5px solid #dcfce7', background:'#f0fdf4', color:'#16a34a', cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.6 : 1, transition:'all 0.15s' }}
+              >
+                {refreshing ? 'Refreshing...' : '🔄 Refresh'}
+              </button>
+              <Link to="/employer/dashboard" style={{ padding:'8px 14px', fontSize:12, fontWeight:700, borderRadius:8, border:'1.5px solid #dcfce7', background:'#f0fdf4', color:'#16a34a', textDecoration:'none', display:'inline-block' }}>Edit</Link>
+            </div>
           </div>
         )}
 
@@ -527,7 +563,17 @@ export default function PostJob() {
 
               {error && (
                 <div style={{ background:'#fee2e2', color:'#dc2626', fontSize:13, padding:'11px 14px', borderRadius:12, marginBottom:20, fontWeight:600 }}>
-                  {error}
+                  <div>{error}</div>
+                  {error.includes('pending approval') && (
+                    <button 
+                      type="button"
+                      onClick={handleRefreshProfile}
+                      disabled={refreshing}
+                      style={{ marginTop:10, padding:'8px 16px', background:'#dc2626', color:'#fff', border:'none', borderRadius:6, cursor: refreshing ? 'not-allowed' : 'pointer', fontSize:12, fontWeight:700 }}
+                    >
+                      {refreshing ? 'Checking...' : 'Check Status Now'}
+                    </button>
+                  )}
                 </div>
               )}
 
