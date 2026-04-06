@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useEmployerAuth } from '../contexts/EmployerAuthContext'
 import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
+import { Users, Phone } from 'lucide-react'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -416,7 +417,7 @@ export default function EmployerEmployees() {
         {/* EMPLOYEE LIST */}
         {filtered.length === 0 ? (
           <div style={styles.emptyCard}>
-            <p style={{ fontSize: '36px', margin: '0 0 12px' }}>👥</p>
+            <p style={{ fontSize: '36px', margin: '0 0 12px' }}><Users size={36} /></p>
             <p style={styles.emptyTitle}>
               {employees.length === 0 ? 'No employees yet' : `No ${filterStatus} employees`}
             </p>
@@ -480,7 +481,7 @@ export default function EmployerEmployees() {
                       </span>
                     )}
                     {employee.phone_number && (
-                      <span style={styles.quickTag}>📞 {employee.phone_number}</span>
+                      <span style={styles.quickTag}><Phone size={12} style={{marginRight:4}} />{employee.phone_number}</span>
                     )}
                   </div>
 

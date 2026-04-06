@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useEmployerAuth } from '../contexts/EmployerAuthContext'
 import { APP_NAME } from '../config/constants'
 import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
+import { Users, Loader, Camera } from 'lucide-react'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -341,7 +342,7 @@ export default function EmployerDashboard() {
         {activeTab === 'team' && (
           <div className="oj-card" style={styles.teamCard}>
             <div style={styles.teamCardInner}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>👥</div>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}><Users size={40} /></div>
               <h3 style={styles.teamTitle}>HR & Employee Management</h3>
               <p style={styles.teamDesc}>
                 Manage your team in one place. Add existing employees, track new hires from OkeOgunJobs, update employment status, and keep records of your full workforce.
@@ -383,7 +384,7 @@ export default function EmployerDashboard() {
                   </div>
                 )}
                 <label style={styles.logoEditBtn} title={logoUploading ? 'Uploading...' : 'Upload logo'}>
-                  {logoUploading ? '⏳' : '📷'}
+                  {logoUploading ? <Loader size={16} /> : <Camera size={16} />}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"

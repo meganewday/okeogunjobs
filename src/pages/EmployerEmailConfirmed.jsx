@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { Check } from 'lucide-react'
 
 export default function EmployerEmailConfirmed() {
   const [status, setStatus] = useState('checking')
@@ -49,7 +50,7 @@ export default function EmployerEmailConfirmed() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <div style={styles.icon}>✅</div>
+        <div style={styles.icon}><Check size={48} /></div>
         <h1 style={styles.title}>Email confirmed</h1>
         <p style={styles.subtitle}>
           Your employer account is now active. The next step is to post your

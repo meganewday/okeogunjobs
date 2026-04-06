@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { Loader, Check, AlertTriangle, X } from 'lucide-react'
 
 export default function Unsubscribe() {
   const [searchParams] = useSearchParams()
@@ -42,7 +43,7 @@ export default function Unsubscribe() {
       <div style={styles.card}>
         {status === 'loading' && (
           <>
-            <p style={styles.icon}>⏳</p>
+            <p style={styles.icon}><Loader size={48} /></p>
             <h1 style={styles.title}>Processing...</h1>
             <p style={styles.text}>Please wait a moment.</p>
           </>
@@ -50,7 +51,7 @@ export default function Unsubscribe() {
 
         {status === 'success' && (
           <>
-            <p style={styles.icon}>✓</p>
+            <p style={styles.icon}><Check size={48} /></p>
             <h1 style={styles.title}>Unsubscribed</h1>
             <p style={styles.text}>
               You have been removed from the {APP_NAME} daily job alerts list.
@@ -65,7 +66,7 @@ export default function Unsubscribe() {
 
         {status === 'invalid' && (
           <>
-            <p style={styles.icon}>⚠️</p>
+            <p style={styles.icon}><AlertTriangle size={48} /></p>
             <h1 style={styles.title}>Link not valid</h1>
             <p style={styles.text}>
               This unsubscribe link is not valid or has already been used.
@@ -77,7 +78,7 @@ export default function Unsubscribe() {
 
         {status === 'error' && (
           <>
-            <p style={styles.icon}>✗</p>
+            <p style={styles.icon}><X size={48} /></p>
             <h1 style={styles.title}>Something went wrong</h1>
             <p style={styles.text}>
               We could not process your request. Please try again or contact us via WhatsApp.

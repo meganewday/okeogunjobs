@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { verifyRecaptcha } from '../lib/recaptcha'
 import { useEmployerAuth } from '../contexts/EmployerAuthContext'
+import { Wrench, Dumbbell, GraduationCap, Monitor, MessageCircle, Check, Loader } from 'lucide-react'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -27,14 +28,14 @@ const JOB_TYPES = [
 ]
 
 const LABOUR_OPTIONS = [
-  { value: 'skilled',    emoji: '🛠', label: 'Skilled',              desc: 'Requires a specific skill or trade' },
-  { value: 'unskilled',  emoji: '💪', label: 'Unskilled',            desc: 'General or physical labour, no specific skill needed' },
-  { value: 'internship', emoji: '🎓', label: 'Internship / IT / SIWES', desc: 'Student industrial attachment or placement' },
+  { value: 'skilled',    icon: Wrench, label: 'Skilled',              desc: 'Requires a specific skill or trade' },
+  { value: 'unskilled',  icon: Dumbbell, label: 'Unskilled',            desc: 'General or physical labour, no specific skill needed' },
+  { value: 'internship', icon: GraduationCap, label: 'Internship / IT / SIWES', desc: 'Student industrial attachment or placement' },
 ]
 
 const APPLICATION_METHODS = [
-  { value: 'phone', label: '🖥 Apply on Platform', desc: 'Seekers apply directly through OkeOgunJobs' },
-  { value: 'whatsapp', label: '💬 Apply via WhatsApp', desc: 'Seekers contact you directly on WhatsApp' },
+  { value: 'phone', label: <><Monitor /> Apply on Platform</>, desc: 'Seekers apply directly through OkeOgunJobs' },
+  { value: 'whatsapp', label: <><MessageCircle /> Apply via WhatsApp</>, desc: 'Seekers contact you directly on WhatsApp' },
 ]
 
 // ─── Global CSS ───────────────────────────────────────────────────────────────
@@ -311,7 +312,7 @@ export default function PostJob() {
       <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#f0fdf4,#dcfce7,#bbf7d0)', padding:24, fontFamily:"'Outfit',sans-serif" }}>
         <style>{CSS}</style>
         <div style={{ background:'#fff', borderRadius:24, padding:'48px 36px', maxWidth:480, textAlign:'center', border:'1.5px solid #dcfce7', boxShadow:'0 8px 32px rgba(22,163,74,0.1)' }}>
-          <div style={{ fontSize:52, marginBottom:16 }}>✅</div>
+          <div style={{ fontSize:52, marginBottom:16 }}><Check size={52} /></div>
           <h2 style={{ fontSize:22, fontWeight:900, color:'#14532d', margin:'0 0 12px' }}>Job Submitted</h2>
           <p style={{ fontSize:15, color:'#4b6358', lineHeight:1.7, margin:'0 0 28px' }}>
             Your listing has been received and is pending review. Once approved, it will appear on the jobs page. This usually takes no more than 24 hours.
@@ -363,7 +364,7 @@ export default function PostJob() {
                 <p style={{ fontSize:14, fontWeight:800, color:'#14532d', margin:0 }}>
                   {employerProfile.organization_name}
                   {employerProfile.status === 'approved' && <span style={{ fontSize:12, marginLeft:8, color:'#16a34a', fontWeight:700 }}>✓ Approved</span>}
-                  {employerProfile.status === 'pending' && <span style={{ fontSize:12, marginLeft:8, color:'#f59e0b', fontWeight:700 }}>⏳ Pending Review</span>}
+                  {employerProfile.status === 'pending' && <span style={{ fontSize:12, marginLeft:8, color:'#f59e0b', fontWeight:700 }}><Loader size={12} /> Pending Review</span>}
                 </p>
                 <p style={{ fontSize:12, color:'#9ca3af', margin:'2px 0 0' }}>
                   {[employerProfile.contact_person, employerProfile.lga, employerProfile.industry].filter(Boolean).join(' · ')}
@@ -400,7 +401,7 @@ export default function PostJob() {
                     cursor:'pointer', textAlign:'left', display:'flex', flexDirection:'column', gap:5,
                     transition:'all 0.15s', fontFamily:"'Outfit',sans-serif",
                   }}>
-                  <span style={{ fontSize:20 }}>{opt.emoji}</span>
+                  <span style={{ fontSize:20 }}><opt.icon size={20} /></span>
                   <span style={{ fontSize:14, fontWeight:800, color: labourType === opt.value ? '#14532d' : '#4b6358' }}>{opt.label}</span>
                   <span style={{ fontSize:12, color:'#9ca3af', lineHeight:1.4 }}>{opt.desc}</span>
                 </button>

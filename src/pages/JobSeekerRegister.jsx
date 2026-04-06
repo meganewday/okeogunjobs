@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { useAuth } from '../contexts/AuthContext'
 import { verifyRecaptcha } from '../lib/recaptcha'
+import { Wrench, Dumbbell, GraduationCap } from 'lucide-react'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -46,9 +47,9 @@ const ACADEMIC_LEVELS = [
 const AGE_RANGES = ['18-25', '26-35', '36-45', '46-55', '55+']
 
 const SEEKER_TYPES = [
-  { value: 'skilled',   emoji: '🛠', label: 'Skilled Worker',      desc: 'You have a specific trade, skill, or professional background' },
-  { value: 'unskilled', emoji: '💪', label: 'Unskilled Worker',     desc: 'You are available for general or physical labour' },
-  { value: 'student',   emoji: '🎓', label: 'Student / IT / SIWES', desc: 'You are a student looking for industrial attachment or placement' },
+  { value: 'skilled',   icon: Wrench, label: 'Skilled Worker',      desc: 'You have a specific trade, skill, or professional background' },
+  { value: 'unskilled', icon: Dumbbell, label: 'Unskilled Worker',     desc: 'You are available for general or physical labour' },
+  { value: 'student',   icon: GraduationCap, label: 'Student / IT / SIWES', desc: 'You are a student looking for industrial attachment or placement' },
 ]
 
 function isValidNin(nin) {
@@ -349,7 +350,7 @@ export default function JobSeekerRegister() {
                     transition:'all 0.15s', fontFamily:"'Outfit',sans-serif",
                   }}
                 >
-                  <span style={{ fontSize:20 }}>{opt.emoji}</span>
+                  <span style={{ fontSize:20 }}><opt.icon size={20} /></span>
                   <span style={{ fontSize:14, fontWeight:800, color: seekerType === opt.value ? '#14532d' : '#4b6358' }}>{opt.label}</span>
                   <span style={{ fontSize:12, color:'#9ca3af', lineHeight:1.4 }}>{opt.desc}</span>
                 </button>

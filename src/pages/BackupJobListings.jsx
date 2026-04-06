@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 import { useAuth } from '../contexts/AuthContext'
+import { Smartphone, MapPin } from 'lucide-react'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -317,10 +318,10 @@ export default function JobListings() {
                       </div>
 
                       <div style={styles.metaRow}>
-                        {job.location && <span style={styles.metaTag}>📍 {job.location}</span>}
+                        {job.location && <span style={styles.metaTag}><MapPin size={12} style={{marginRight:4}} />{job.location}</span>}
                         {job.lga && <span style={styles.metaTag}>🏛 {job.lga}</span>}
                         <span style={styles.metaTag}>
-                          📱 {job.application_method === 'whatsapp' ? 'WhatsApp' : 'Platform'}
+                          <Smartphone size={12} style={{marginRight:4}} />{job.application_method === 'whatsapp' ? 'WhatsApp' : 'Platform'}
                         </span>
                       </div>
 

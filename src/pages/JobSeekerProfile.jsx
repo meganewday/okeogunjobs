@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { APP_NAME } from '../config/constants'
 import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
+import { MapPin } from 'lucide-react'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -408,7 +409,7 @@ export default function JobSeekerProfile() {
             <div>
               <h2 style={{ fontSize:20, fontWeight:900, color:'#14532d', margin:'0 0 3px' }}>{profile.full_name}</h2>
               <p style={{ fontSize:13, color:'#4b6358', margin:'1px 0', fontWeight:500 }}>{profile.phone_number}</p>
-              {profile.lga && <p style={{ fontSize:13, color:'#4b6358', margin:'1px 0' }}>📍 {profile.lga}</p>}
+              {profile.lga && <p style={{ fontSize:13, color:'#4b6358', margin:'1px 0' }}><MapPin size={13} style={{marginRight:4}} />{profile.lga}</p>}
               {photoError && <p style={{ fontSize:12, color:'#dc2626', margin:'4px 0 0' }}>{photoError}</p>}
             </div>
           </div>

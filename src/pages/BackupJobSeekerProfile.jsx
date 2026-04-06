@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { APP_NAME } from '../config/constants'
 import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
+import { Check, Loader, Camera, Clipboard, Info } from 'lucide-react'
 
 
 function useIsDesktop() {
@@ -78,9 +79,9 @@ const STATUS_STYLES = {
 }
 
 const NOTIF_STYLES = {
-  application_shortlisted: { backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd', icon: '📋' },
-  application_accepted:    { backgroundColor: '#e8f5ee', color: '#1a6b3c', borderColor: '#a7f3d0', icon: '✅' },
-  application_rejected:    { backgroundColor: '#fff8e1', color: '#b45309', borderColor: '#fde68a', icon: 'ℹ️' },
+  application_shortlisted: { backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd', icon: Clipboard },
+  application_accepted:    { backgroundColor: '#e8f5ee', color: '#1a6b3c', borderColor: '#a7f3d0', icon: Check },
+  application_rejected:    { backgroundColor: '#fff8e1', color: '#b45309', borderColor: '#fde68a', icon: Info },
 }
 
 export default function JobSeekerProfile() {
@@ -365,7 +366,7 @@ export default function JobSeekerProfile() {
                 </div>
               )}
               <label style={styles.photoEditBtn} title={photoUploading ? 'Uploading...' : 'Change photo'}>
-                {photoUploading ? '⏳' : '📷'}
+                {photoUploading ? <Loader size={16} /> : <Camera size={16} />}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -681,7 +682,7 @@ export default function JobSeekerProfile() {
                         color: style.color,
                       }}
                     >
-                      <span style={styles.notifIcon}>{style.icon}</span>
+                      <span style={styles.notifIcon}><style.icon size={16} /></span>
                       <div style={styles.notifBody}>
                         <p style={styles.notifMessage}>{notif.message}</p>
                         <p style={styles.notifDate}>

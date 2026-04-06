@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
+import { Wrench, GraduationCap, Dumbbell, MapPin, Handshake, Building, BookOpen } from 'lucide-react'
 
 const STEPS = [
   {
@@ -28,32 +29,32 @@ const STEPS = [
 
 const WHO_WE_SERVE = [
   {
-    emoji: '🛠',
+    icon: Wrench,
     title: 'Skilled Workers',
     description: 'Carpenters, electricians, nurses, teachers, farmers, drivers, and anyone with a trade or professional background. Register your profile and let employers in your LGA find you. Your skills are listed, your location is shown, and your CV can be uploaded if you have one.',
   },
   {
-    emoji: '🏢',
+    icon: Building,
     title: 'Local Employers',
     description: 'Businesses, farms, schools, clinics, and individuals across Oke-Ogun looking for staff. Post a job for free, specify the skill or labour type you need, and receive applications directly on WhatsApp or phone. Every listing is reviewed before it goes live.',
   },
   {
-    emoji: '🎓',
+    icon: GraduationCap,
     title: 'Fresh Graduates',
     description: 'If you recently finished your degree or diploma and are looking for your first job in the region, OkeOgunJobs gives you a place to be found. Register your profile with your qualification, your LGA, and the kind of work you are looking for.',
   },
   {
-    emoji: '🤝',
+    icon: Handshake,
     title: 'Community Partners',
     description: 'NGOs, cooperatives, government agencies, and community organisations that support employment in Oke-Ogun. Whether you are placing workers, running a programme, or looking for local talent for a project, this platform is built for the same communities you serve.',
   },
   {
-    emoji: '💪',
+    icon: Dumbbell,
     title: 'Unskilled Workers',
     description: 'Not everyone needs a certificate to work. If you are available for farm work, domestic work, load carrying, cleaning, security, or any kind of general labour, you belong here. Register, select the type of work you can do, and employers who need that kind of help will find you.',
   },
   {
-    emoji: '📚',
+    icon: BookOpen,
     title: 'IT / SIWES Students',
     description: 'Students from polytechnics, universities, and colleges of education looking for industrial attachment or SIWES placement in Oke-Ogun. Fill in your institution, course, and academic level. Employers and organisations who accept IT students can post placement positions here too.',
   },
@@ -251,7 +252,7 @@ export default function Home() {
                   </div>
                   <h3 style={styles.employerName}>{employer.organization_name}</h3>
                   {employer.lga && (
-                    <p style={styles.employerLga}>📍 {employer.lga}</p>
+                    <p style={styles.employerLga}><MapPin size={14} style={{marginRight:4}} />{employer.lga}</p>
                   )}
                   <div style={styles.employerFooter}>
                     <span style={styles.activeJobsTag}>
@@ -309,7 +310,7 @@ export default function Home() {
               <div style={styles.whoGrid}>
                 {WHO_WE_SERVE.map(item => (
                   <div key={item.title} style={styles.whoCard}>
-                    <span style={styles.whoEmoji}>{item.emoji}</span>
+                    <span style={styles.whoEmoji}><item.icon size={24} /></span>
                     <h3 style={styles.whoTitle}>{item.title}</h3>
                     <p style={styles.whoDesc}>{item.description}</p>
                   </div>

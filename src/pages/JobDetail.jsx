@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { MapPin, MessageCircle, Check, Star } from 'lucide-react';
 
 const JOB_TYPE_LABELS = {
   full_time: 'Full-time',
@@ -203,13 +204,13 @@ export default function JobDetail() {
                 <h1 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 700, color: '#14532d', lineHeight: 1.3 }}>{job.job_title}</h1>
                 <p style={{ margin: '0 0 10px', color: '#15803d', fontWeight: 500, fontSize: 15 }}>{employer?.organization_name}</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  <span style={badgeStyle('#dcfce7', '#14532d')}>📍 {job.location || employer?.lga || 'Oke-Ogun'}</span>
+                  <span style={badgeStyle('#dcfce7', '#14532d')}><MapPin size={14} style={{marginRight:4}} />{job.location || employer?.lga || 'Oke-Ogun'}</span>
                   <span style={badgeStyle('#dcfce7', '#14532d')}>{JOB_TYPE_LABELS[job.job_type] || job.job_type}</span>
                   {job.labour_type && (
                     <span style={badgeStyle('#fef9c3', '#854d0e')}>{capitalise(job.labour_type)}</span>
                   )}
                   {job.is_promoted && (
-                    <span style={badgeStyle('#fef3c7', '#b45309')}>⭐ Promoted</span>
+                    <span style={badgeStyle('#fef3c7', '#b45309')}><Star size={14} style={{marginRight:4}} />Promoted</span>
                   )}
                 </div>
               </div>
@@ -254,7 +255,7 @@ export default function JobDetail() {
             )}
 
             {applySuccess && (
-              <div style={alertBox('#dcfce7', '#14532d')}>✅ Application submitted! The employer will review and get back to you.</div>
+              <div style={alertBox('#dcfce7', '#14532d')}><Check size={16} style={{marginRight:8}} />Application submitted! The employer will review and get back to you.</div>
             )}
 
             {!alreadyApplied && canApplyOnPlatform && (
@@ -287,7 +288,7 @@ export default function JobDetail() {
                 rel="noopener noreferrer"
                 style={{ display: 'block', background: '#25D366', color: '#fff', border: 'none', borderRadius: 50, padding: '12px 32px', fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 15, textDecoration: 'none', textAlign: 'center' }}
               >
-                💬 Apply via WhatsApp
+                <MessageCircle size={16} style={{marginRight:8}} />Apply via WhatsApp
               </a>
             )}
 

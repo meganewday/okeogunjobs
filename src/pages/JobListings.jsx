@@ -5,6 +5,7 @@ import { APP_NAME } from '../config/constants'
 import { useAuth } from '../contexts/AuthContext'
 import { Helmet } from 'react-helmet-async'
 import JobAlertSubscribe from '../components/JobAlertSubscribe'
+import { Smartphone, MapPin } from 'lucide-react'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -371,10 +372,10 @@ export default function JobListings() {
 
                     {/* Meta tags */}
                     <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:12 }}>
-                      {job.location && <span style={{ fontSize:12, color:'#4b6358', background:'#f0fdf4', padding:'4px 10px', borderRadius:20, border:'1px solid #dcfce7' }}>📍 {job.location}</span>}
+                      {job.location && <span style={{ fontSize:12, color:'#4b6358', background:'#f0fdf4', padding:'4px 10px', borderRadius:20, border:'1px solid #dcfce7' }}><MapPin size={12} style={{marginRight:4}} />{job.location}</span>}
                       {job.lga      && <span style={{ fontSize:12, color:'#4b6358', background:'#f0fdf4', padding:'4px 10px', borderRadius:20, border:'1px solid #dcfce7' }}>🏛 {job.lga}</span>}
-                      <span style={{ fontSize:12, color:'#4b6358', background:'#f0fdf4', padding:'4px 10px', borderRadius:20, border:'1px solid #dcfce7' }}>
-                        📱 {job.application_method === 'whatsapp' ? 'WhatsApp' : 'Platform'}
+                        <span style={{ fontSize:12, color:'#4b6358', background:'#f0fdf4', padding:'4px 10px', borderRadius:20, border:'1px solid #dcfce7' }}>
+                        <Smartphone size={14} style={{marginRight:4}} />{job.application_method === 'whatsapp' ? 'WhatsApp' : 'Platform'}
                       </span>
                     </div>
 
