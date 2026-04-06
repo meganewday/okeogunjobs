@@ -33,7 +33,7 @@ const LABOUR_OPTIONS = [
 ]
 
 const APPLICATION_METHODS = [
-  { value: 'platform', label: '🖥 Apply on Platform', desc: 'Seekers apply directly through OkeOgunJobs' },
+  { value: 'phone', label: '🖥 Apply on Platform', desc: 'Seekers apply directly through OkeOgunJobs' },
   { value: 'whatsapp', label: '💬 Apply via WhatsApp', desc: 'Seekers contact you directly on WhatsApp' },
 ]
 
@@ -261,7 +261,7 @@ export default function PostJob() {
         lga:                form.lga || null,
         skills_required:    form.selectedSkills.length > 0 ? form.selectedSkills : null,
         custom_skills:      customSkillsString,
-        application_method: form.application_method || 'platform',
+        application_method: form.application_method || 'phone',
         status:             'pending',
       }
 

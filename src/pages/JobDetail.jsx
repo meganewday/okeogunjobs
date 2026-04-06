@@ -171,8 +171,8 @@ export default function JobDetail() {
   const pageTitle = `${job.job_title} at ${employer?.organization_name || 'Employer'} — ${job.location || 'Oke-Ogun'} | OkeOgunJobs`;
   const pageDesc = `${job.job_title} job in ${job.location || 'Oke-Ogun'}, Oyo State. ${JOB_TYPE_LABELS[job.job_type] || ''} position. Apply now on OkeOgunJobs.`;
 
-  const canApplyOnPlatform = job.application_method === 'platform';
-  const canApplyWhatsApp = job.application_method === 'whatsapp' || job.application_method === 'phone';
+  const canApplyOnPlatform = job.application_method === 'phone';
+  const canApplyWhatsApp = job.application_method === 'whatsapp';
 
   return (
     <>
