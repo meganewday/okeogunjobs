@@ -1,104 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from './lib/supabase';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import Home from './pages/Home'
+import JobSeekerRegister from './pages/JobSeekerRegister'
+import PostJob from './pages/PostJob'
+import JobListings from './pages/JobListings'
+import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
+import Header from './components/Header'
+import Footer from './components/Footer'
+import { AuthProvider } from './contexts/AuthContext'
+import { EmployerAuthProvider } from './contexts/EmployerAuthContext'
+import JobSeekerSignup from './pages/JobSeekerSignup'
+import JobSeekerLogin from './pages/JobSeekerLogin'
+import JobSeekerProfile from './pages/JobSeekerProfile'
+import ResetPassword from './pages/ResetPassword'
+import UpdatePassword from './pages/UpdatePassword'
+import EmailConfirmed from './pages/EmailConfirmed'
+import EmployerSignup from './pages/EmployerSignup'
+import EmployerLogin from './pages/EmployerLogin'
+import EmployerEmailConfirmed from './pages/EmployerEmailConfirmed'
+import EmployerResetPassword from './pages/EmployerResetPassword'
+import EmployerUpdatePassword from './pages/EmployerUpdatePassword'
+import EmployerDashboard from './pages/EmployerDashboard'
+import EmployerApplications from './pages/EmployerApplications'
+import EmployerEmployees from './pages/EmployerEmployees'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import FAQ from './pages/FAQ'
+import Unsubscribe from './pages/Unsubscribe'
 
-// Pages
-import Home from './pages/Home';
-import Jobs from './pages/Jobs';
-import JobDetails from './pages/JobDetails';
-import EmployerLogin from './pages/EmployerLogin';
-import EmployerSignup from './pages/EmployerSignup';
-import EmployerDashboard from './pages/EmployerDashboard';
-import PostJob from './pages/PostJob';
-import CandidateSearch from './pages/CandidateSearch';
-import Profile from './pages/Profile';
-
-// Components - Matched to your exact path: components/Header.jsx
-import Header from './components/Header';
-// import Footer from './components/Footer'; // Commented out to prevent build failure if file differs
-
-// Protected Route Component
-const ProtectedRoute = ({ children, user, loading }) => {
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-  if (!user) return <Navigate to="/employer/login" replace />;
-  return children;
-};
-
-function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
-    };
-
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+function Layout({ children }) {
+  const location = useLocation()
+  const hideLayout = location.pathname.startsWith('/admin')
 
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        {/* Header component now pointing to components/Header.jsx */}
-        <Header user={user} />
-        
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/jobs" element={<Jobs />} />
-            <Route path="/jobs/:id" element={<JobDetails />} />
-            
-            {/* Auth Routes */}
-            <Route path="/employer/login" element={!user ? <EmployerLogin /> : <Navigate to="/employer/dashboard" />} />
-            <Route path="/employer/signup" element={!user ? <EmployerSignup /> : <Navigate to="/employer/dashboard" />} />
-            
-            {/* Protected Employer Routes */}
-            <Route path="/employer/dashboard" element={
-              <ProtectedRoute user={user} loading={loading}>
-                <EmployerDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/employer/post-job" element={
-              <ProtectedRoute user={user} loading={loading}>
-                <PostJob />
-              </ProtectedRoute>
-            } />
-            <Route path="/employer/candidates" element={
-              <ProtectedRoute user={user} loading={loading}>
-                <CandidateSearch />
-              </ProtectedRoute>
-            } />
-            
-            {/* Profile */}
-            <Route path="/profile" element={
-              <ProtectedRoute user={user} loading={loading}>
-                <Profile />
-              </ProtectedRoute>
-            } />
-
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-        
-        {/* <Footer /> */}
-      </div>
-    </Router>
-  );
+    <>
+      {!hideLayout && <Header />}
+      {children}
+      {!hideLayout && <Footer />}
+    </>
+  )
 }
 
-export default App;
-              
+function App() {
+  return (
+    <AuthProvider>
+      <EmployerAuthProvider>
+        <BrowserRouter>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/register" element={<JobSeekerRegister />} />
+              <Route path="/post-job" element={<PostJob />} />
+              <Route path="/jobs" element={<JobListings />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="/signup" element={<JobSeekerSignup />} />
+              <Route path="/login" element={<JobSeekerLogin />} />
+              <Route path="/profile" element={<JobSeekerProfile />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
+              <Route path="/email-confirmed" element={<EmailConfirmed />} />
+              <Route path="/employer/signup" element={<EmployerSignup />} />
+              <Route path="/employer/login" element={<EmployerLogin />} />
+              <Route path="/employer/email-confirmed" element={<EmployerEmailConfirmed />} />
+              <Route path="/employer/reset-password" element={<EmployerResetPassword />} />
+              <Route path="/employer/update-password" element={<EmployerUpdatePassword />} />
+              <Route path="/employer/dashboard" element={<EmployerDashboard />} />
+              <Route path="/employer/applications/:jobId" element={<EmployerApplications />} />
+              <Route path="/employer/employees" element={<EmployerEmployees />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </EmployerAuthProvider>
+    </AuthProvider>
+  )
+}
+
+export default App
