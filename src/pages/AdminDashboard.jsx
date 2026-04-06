@@ -7,9 +7,10 @@ import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
 export default function AdminDashboard() {
   const [session, setSession] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [activeTab, setActiveTab] = useState('jobs')
+  const [activeTab, setActiveTab] = useState('employers')
   const [jobListings, setJobListings] = useState([])
   const [jobSeekers, setJobSeekers] = useState([])
+  const [employers, setEmployers] = useState([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
@@ -42,8 +43,16 @@ export default function AdminDashboard() {
 
   async function fetchData() {
     setLoading(true)
-    await Promise.all([fetchJobListings(), fetchJobSeekers()])
+    await Promise.all([fetchEmployers(), fetchJobListings(), fetchJobSeekers()])
     setLoading(false)
+  }
+
+  async function fetchEmployers() {
+    const { data } = await supabase
+      .from('employers')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (data) setEmployers(data)
   }
 
   async function fetchJobListings() {
@@ -80,6 +89,14 @@ export default function AdminDashboard() {
     if (!error) fetchJobSeekers()
   }
 
+  async function updateEmployerStatus(id, status) {
+    const { error } = await supabase
+      .from('employers')
+      .update({ status })
+      .eq('id', id)
+    if (!error) fetchEmployers()
+  }
+
   const handleTimeout = useCallback(async () => {
     clearActivity('admin')
     await supabase.auth.signOut()
@@ -98,6 +115,8 @@ export default function AdminDashboard() {
   const approvedJobs    = jobListings.filter(j => j.status === 'approved')
   const pendingSeekers  = jobSeekers.filter(s => s.status === 'pending')
   const approvedSeekers = jobSeekers.filter(s => s.status === 'approved')
+  const pendingEmployers = employers.filter(e => e.status === 'pending')
+  const approvedEmployers = employers.filter(e => e.status === 'approved')
 
   function statusBadge(status) {
     const colors = {
@@ -137,6 +156,10 @@ export default function AdminDashboard() {
       {/* Stats */}
       <div style={styles.statsRow}>
         <div style={styles.statCard}>
+          <p style={styles.statNumber}>{pendingEmployers.length}</p>
+          <p style={styles.statLabel}>Pending Employers</p>
+        </div>
+        <div style={styles.statCard}>
           <p style={styles.statNumber}>{pendingJobs.length}</p>
           <p style={styles.statLabel}>Pending Jobs</p>
         </div>
@@ -157,6 +180,12 @@ export default function AdminDashboard() {
       {/* Tabs */}
       <div style={styles.tabs}>
         <button
+          onClick={() => setActiveTab('employers')}
+          style={{ ...styles.tab, ...(activeTab === 'employers' ? styles.tabActive : {}) }}
+        >
+          Employers ({employers.length})
+        </button>
+        <button
           onClick={() => setActiveTab('jobs')}
           style={{ ...styles.tab, ...(activeTab === 'jobs' ? styles.tabActive : {}) }}
         >
@@ -169,6 +198,74 @@ export default function AdminDashboard() {
           Job Seekers ({jobSeekers.length})
         </button>
       </div>
+
+      {/* Employers Tab */}
+      {activeTab === 'employers' && (
+        <div style={styles.list}>
+          {employers.length === 0 && <p style={styles.empty}>No employers yet.</p>}
+          {employers.map(employer => (
+            <div key={employer.id} style={styles.card}>
+              <div style={styles.cardHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {employer.logo_url ? (
+                    <img src={employer.logo_url} alt="" style={styles.logoImage} />
+                  ) : (
+                    <div style={styles.logoPlaceholder}>
+                      {employer.organization_name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <h3 style={styles.cardTitle}>{employer.organization_name}</h3>
+                    <p style={styles.cardSub}>{employer.industry || 'Industry not specified'} — {employer.lga || 'LGA not specified'}</p>
+                  </div>
+                </div>
+                {statusBadge(employer.status)}
+              </div>
+              <p style={styles.cardDetail}><strong>Contact Person:</strong> {employer.contact_person}</p>
+              <p style={styles.cardDetail}><strong>Phone:</strong> {employer.phone_number}</p>
+              {employer.email && (
+                <p style={styles.cardDetail}><strong>Email:</strong> {employer.email}</p>
+              )}
+              {employer.business_type && (
+                <p style={styles.cardDetail}><strong>Business Type:</strong> {employer.business_type}</p>
+              )}
+              {employer.cac_number && (
+                <p style={styles.cardDetail}><strong>CAC Number:</strong> {employer.cac_number}</p>
+              )}
+              {employer.year_registered && (
+                <p style={styles.cardDetail}><strong>Year Registered:</strong> {employer.year_registered}</p>
+              )}
+              {employer.description && (
+                <p style={styles.cardDescription}>{employer.description}</p>
+              )}
+              <p style={styles.cardDate}>Registered: {new Date(employer.created_at).toLocaleDateString()}</p>
+
+              {employer.status === 'pending' && (
+                <div style={styles.actionRow}>
+                  <button onClick={() => updateEmployerStatus(employer.id, 'approved')} style={styles.approveBtn}>Approve Account</button>
+                  <button onClick={() => updateEmployerStatus(employer.id, 'rejected')} style={styles.rejectBtn}>Reject</button>
+                </div>
+              )}
+              {employer.status === 'approved' && (
+                <div style={styles.actionRow}>
+                  <button onClick={() => updateEmployerStatus(employer.id, 'suspended')} style={styles.suspendBtn}>Suspend</button>
+                  <button onClick={() => updateEmployerStatus(employer.id, 'rejected')} style={styles.rejectBtn}>Reject</button>
+                </div>
+              )}
+              {employer.status === 'suspended' && (
+                <div style={styles.actionRow}>
+                  <button onClick={() => updateEmployerStatus(employer.id, 'approved')} style={styles.approveBtn}>Re-activate</button>
+                </div>
+              )}
+              {employer.status === 'rejected' && (
+                <div style={styles.actionRow}>
+                  <button onClick={() => updateEmployerStatus(employer.id, 'approved')} style={styles.approveBtn}>Approve</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Job Listings Tab */}
       {activeTab === 'jobs' && (
@@ -318,8 +415,11 @@ const styles = {
   actionRow: { display: 'flex', gap: '10px', marginTop: '14px' },
   approveBtn: { padding: '8px 20px', backgroundColor: '#1a6b3c', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
   rejectBtn: { padding: '8px 20px', backgroundColor: '#fff', color: '#e53e3e', border: '1px solid #e53e3e', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
+  suspendBtn: { padding: '8px 20px', backgroundColor: '#fff', color: '#f59e0b', border: '1px solid #f59e0b', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
   closeBtn: { padding: '8px 20px', backgroundColor: '#fff', color: '#888', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
   link: { color: '#1a6b3c', textDecoration: 'underline' },
+  logoImage: { width: '48px', height: '48px', borderRadius: '6px', objectFit: 'contain', flexShrink: 0, backgroundColor: '#f5f5f5' },
+  logoPlaceholder: { width: '48px', height: '48px', borderRadius: '6px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   seekerAvatar: { width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 },
   seekerAvatarInitial: { width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 }
