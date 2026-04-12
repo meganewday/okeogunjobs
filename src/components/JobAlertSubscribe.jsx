@@ -31,7 +31,7 @@ export default function JobAlertSubscribe() {
       setSuccess(true)
     } catch (err) {
       console.error(err)
-      setError('Something went wrong. Please try again.')
+      setError(err.message || JSON.stringify(err))
     } finally {
       setSubmitting(false)
     }
