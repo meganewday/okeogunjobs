@@ -1,9 +1,21 @@
+
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
+// Helper to generate a random unsubscribe token
+function generateToken(length = 32) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+
 export default function JobAlertSubscribe() {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const [email, setEmail] = useState(user?.email || '')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -20,10 +32,16 @@ export default function JobAlertSubscribe() {
 
     setSubmitting(true)
     try {
+      // Always generate a new unsubscribe_token for new subscriptions
+      const unsubscribe_token = generateToken(40)
       const { error: insertError } = await supabase
         .from('job_alert_subscribers')
         .upsert(
-          { email: email.trim().toLowerCase(), is_active: true },
+          {
+            email: email.trim().toLowerCase(),
+            is_active: true,
+            unsubscribe_token,
+          },
           { onConflict: 'email' }
         )
 
@@ -36,6 +54,7 @@ export default function JobAlertSubscribe() {
       setSubmitting(false)
     }
   }
+
 
   if (success) {
     return (
