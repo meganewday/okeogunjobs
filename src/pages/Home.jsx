@@ -431,7 +431,7 @@ export default function Home() {
 
               {/* Job Alert Subscribe */}
               <div style={{ marginTop:24 }}>
-              
+              <JobAlertSubscribe />
               </div>
             </div>
 

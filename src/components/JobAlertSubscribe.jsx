@@ -14,6 +14,7 @@ function generateToken(length = 32) {
 }
 
 
+
 export default function JobAlertSubscribe() {
   const { user } = useAuth()
   const [email, setEmail] = useState(user?.email || '')
@@ -32,19 +33,43 @@ export default function JobAlertSubscribe() {
 
     setSubmitting(true)
     try {
-      // Always generate a new unsubscribe_token for new subscriptions
-      const unsubscribe_token = generateToken(40)
+      // Check if already subscribed
+      const { data: existing, error: fetchError } = await supabase
+        .from('job_alert_subscribers')
+        .select('id, is_active')
+        .eq('email', email.trim().toLowerCase())
+        .maybeSingle()
+      if (fetchError) throw fetchError
+
+      let unsubscribe_token = generateToken(40)
+      if (existing) {
+        // If already subscribed and active, show success
+        if (existing.is_active) {
+          setSuccess(true)
+          setSubmitting(false)
+          return
+        }
+        // If exists but inactive, reuse their token
+        // (or you could generate a new one if you want)
+        // We'll update is_active to true
+        const { error: reactivateError } = await supabase
+          .from('job_alert_subscribers')
+          .update({ is_active: true })
+          .eq('id', existing.id)
+        if (reactivateError) throw reactivateError
+        setSuccess(true)
+        setSubmitting(false)
+        return
+      }
+
+      // New subscriber
       const { error: insertError } = await supabase
         .from('job_alert_subscribers')
-        .upsert(
-          {
-            email: email.trim().toLowerCase(),
-            is_active: true,
-            unsubscribe_token,
-          },
-          { onConflict: 'email' }
-        )
-
+        .insert({
+          email: email.trim().toLowerCase(),
+          is_active: true,
+          unsubscribe_token,
+        })
       if (insertError) throw insertError
       setSuccess(true)
     } catch (err) {
