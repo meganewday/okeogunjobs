@@ -1,7 +1,125 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Building2, Mail, Lock, User, Phone, MapPin, Briefcase, Calendar, ChevronRight, ChevronLeft, AlertCircle } from 'lucide-react';
+
+const styles = {
+  page: {
+    minHeight: '100vh',
+    background: '#f5f7f5',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    padding: '48px 16px',
+  },
+  cardWrap: {
+    maxWidth: 480,
+    margin: '0 auto',
+    width: '100%',
+    background: '#fff',
+    borderRadius: 16,
+    boxShadow: '0 4px 24px rgba(0,0,0,0.07)',
+    padding: '36px 28px',
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 900,
+    color: '#14532d',
+    margin: '0 0 8px 0',
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 15,
+    color: '#4b6358',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  label: {
+    display: 'block',
+    fontSize: 14,
+    fontWeight: 700,
+    color: '#14532d',
+    marginBottom: 6,
+  },
+  inputWrap: {
+    position: 'relative',
+    marginBottom: 18,
+  },
+  input: {
+    width: '100%',
+    padding: '10px 14px 10px 38px',
+    border: '1px solid #c8e6d4',
+    borderRadius: 8,
+    fontSize: 15,
+    outline: 'none',
+    color: '#222',
+    background: '#fff',
+    boxSizing: 'border-box',
+  },
+  select: {
+    width: '100%',
+    padding: '10px 14px 10px 38px',
+    border: '1px solid #c8e6d4',
+    borderRadius: 8,
+    fontSize: 15,
+    outline: 'none',
+    color: '#222',
+    background: '#fff',
+    boxSizing: 'border-box',
+  },
+  icon: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    width: 18,
+    height: 18,
+    color: '#9ca3af',
+  },
+  btn: {
+    width: '100%',
+    padding: '13px 0',
+    background: '#16a34a',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    fontWeight: 700,
+    fontSize: 15,
+    cursor: 'pointer',
+    marginTop: 10,
+    transition: 'background 0.2s',
+  },
+  btnSecondary: {
+    width: '100%',
+    padding: '13px 0',
+    background: '#fff',
+    color: '#14532d',
+    border: '1.5px solid #c8e6d4',
+    borderRadius: 8,
+    fontWeight: 700,
+    fontSize: 15,
+    cursor: 'pointer',
+    marginTop: 10,
+    transition: 'background 0.2s',
+  },
+  error: {
+    background: '#fef2f2',
+    color: '#b91c1c',
+    borderLeft: '4px solid #f87171',
+    padding: '12px 16px',
+    borderRadius: 8,
+    marginBottom: 18,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 14,
+  },
+  flexRow: {
+    display: 'flex',
+    gap: 16,
+    marginBottom: 0,
+  },
+}
 
 const EmployerSignup = () => {
   const navigate = useNavigate();
@@ -93,124 +211,111 @@ const EmployerSignup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <h2 className="text-3xl font-extrabold text-gray-900">Employer Registration</h2>
-        <p className="mt-2 text-sm text-gray-600">Step {step} of 2</p>
-      </div>
+    <div style={styles.page}>
+      <div style={styles.cardWrap}>
+        <h2 style={styles.title}>Employer Registration</h2>
+        <p style={styles.subtitle}>Step {step} of 2</p>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
+        {error && (
+          <div style={styles.error}>
+            <AlertCircle style={{ width: 20, height: 20 }} />
+            <span>{error}</span>
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {step === 1 ? (
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Organization Name</label>
-                  <div className="mt-1 relative">
-                    <Building2 className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                    <input name="organization_name" type="text" required value={formData.organization_name} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5 focus:ring-primary-500 focus:border-primary-500" placeholder="e.g. Vibe Studio" />
+        <form onSubmit={handleSubmit}>
+          {step === 1 ? (
+            <>
+              <div style={styles.inputWrap}>
+                <label style={styles.label}>Organization Name</label>
+                <Building2 style={styles.icon} />
+                <input name="organization_name" type="text" required value={formData.organization_name} onChange={handleChange} style={styles.input} placeholder="e.g. Vibe Studio" />
+              </div>
+              <div style={styles.inputWrap}>
+                <label style={styles.label}>Email Address</label>
+                <Mail style={styles.icon} />
+                <input name="email" type="email" required value={formData.email} onChange={handleChange} style={styles.input} placeholder="hr@organization.com" />
+              </div>
+              <div style={styles.flexRow}>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Password</label>
+                  <div style={styles.inputWrap}>
+                    <Lock style={styles.icon} />
+                    <input name="password" type="password" required value={formData.password} onChange={handleChange} style={styles.input} />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                  <div className="mt-1 relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                    <input name="email" type="email" required value={formData.email} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5 focus:ring-primary-500 focus:border-primary-500" placeholder="hr@organization.com" />
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Confirm Password</label>
+                  <div style={styles.inputWrap}>
+                    <Lock style={styles.icon} />
+                    <input name="confirmPassword" type="password" required value={formData.confirmPassword} onChange={handleChange} style={styles.input} />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Password</label>
-                    <div className="mt-1 relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <input name="password" type="password" required value={formData.password} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-                    <div className="mt-1 relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <input name="confirmPassword" type="password" required value={formData.confirmPassword} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5" />
-                    </div>
+              </div>
+              <button type="submit" style={styles.btn}>
+                Next Step <ChevronRight style={{ marginLeft: 8, width: 18, height: 18 }} />
+              </button>
+            </>
+          ) : (
+            <>
+              <div style={styles.flexRow}>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Contact Person</label>
+                  <div style={styles.inputWrap}>
+                    <User style={styles.icon} />
+                    <input name="contact_person" type="text" required value={formData.contact_person} onChange={handleChange} style={styles.input} />
                   </div>
                 </div>
-
-                <button type="submit" className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
-                  Next Step <ChevronRight className="ml-2 h-4 w-4" />
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Phone Number</label>
+                  <div style={styles.inputWrap}>
+                    <Phone style={styles.icon} />
+                    <input name="phone_number" type="tel" required value={formData.phone_number} onChange={handleChange} style={styles.input} />
+                  </div>
+                </div>
+              </div>
+              <div style={styles.flexRow}>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>LGA (Oke-Ogun)</label>
+                  <div style={styles.inputWrap}>
+                    <MapPin style={styles.icon} />
+                    <select name="lga" value={formData.lga} onChange={handleChange} style={styles.select}>
+                      <option value="Iseyin">Iseyin</option>
+                      <option value="Itesiwaju">Itesiwaju</option>
+                      <option value="Iwajowa">Iwajowa</option>
+                      <option value="Kajola">Kajola</option>
+                      <option value="Atisbo">Atisbo</option>
+                      <option value="Saki East">Saki East</option>
+                      <option value="Saki West">Saki West</option>
+                      <option value="Oorelope">Oorelope</option>
+                      <option value="Irepo">Irepo</option>
+                      <option value="Olorunsogo">Olorunsogo</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Business Type</label>
+                  <div style={styles.inputWrap}>
+                    <Briefcase style={styles.icon} />
+                    <select name="business_type" value={formData.business_type} onChange={handleChange} style={styles.select}>
+                      <option value="Sole Proprietorship">Sole Proprietorship</option>
+                      <option value="Partnership">Partnership</option>
+                      <option value="Private Limited Company">Private Limited Company</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div style={styles.flexRow}>
+                <button type="button" onClick={() => setStep(1)} style={styles.btnSecondary}>
+                  <ChevronLeft style={{ marginRight: 8, width: 18, height: 18 }} /> Back
+                </button>
+                <button type="submit" disabled={loading} style={{ ...styles.btn, opacity: loading ? 0.7 : 1 }}>
+                  {loading ? 'Creating Account...' : 'Complete Signup'}
                 </button>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Contact Person</label>
-                    <div className="mt-1 relative">
-                      <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <input name="contact_person" type="text" required value={formData.contact_person} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                    <div className="mt-1 relative">
-                      <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <input name="phone_number" type="tel" required value={formData.phone_number} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">LGA (Oke-Ogun)</label>
-                    <div className="mt-1 relative">
-                      <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <select name="lga" value={formData.lga} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5">
-                        <option value="Iseyin">Iseyin</option>
-                        <option value="Itesiwaju">Itesiwaju</option>
-                        <option value="Iwajowa">Iwajowa</option>
-                        <option value="Kajola">Kajola</option>
-                        <option value="Atisbo">Atisbo</option>
-                        <option value="Saki East">Saki East</option>
-                        <option value="Saki West">Saki West</option>
-                        <option value="Oorelope">Oorelope</option>
-                        <option value="Irepo">Irepo</option>
-                        <option value="Olorunsogo">Olorunsogo</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Business Type</label>
-                    <div className="mt-1 relative">
-                      <Briefcase className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <select name="business_type" value={formData.business_type} onChange={handleChange} className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm p-2.5">
-                        <option value="Sole Proprietorship">Sole Proprietorship</option>
-                        <option value="Partnership">Partnership</option>
-                        <option value="Private Limited Company">Private Limited Company</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex space-x-4">
-                  <button type="button" onClick={() => setStep(1)} className="w-1/3 flex justify-center items-center py-3 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50">
-                    <ChevronLeft className="mr-1 h-4 w-4" /> Back
-                  </button>
-                  <button type="submit" disabled={loading} className="w-2/3 py-3 border border-transparent rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 font-medium">
-                    {loading ? 'Creating Account...' : 'Complete Signup'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </form>
-        </div>
+            </>
+          )}
+        </form>
       </div>
     </div>
   );
