@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Building } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { APP_NAME } from '../config/constants'
 
@@ -225,7 +226,7 @@ export default function EmployerSignup() {
 
         {/* Employer badge */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dcfce7', color: '#166534', borderRadius: 50, padding: '5px 14px', fontSize: 12, fontWeight: 700, marginBottom: 20 }}>
-          🏢 Employer Account
+          <Building size={13} strokeWidth={2.5} /> Employer Account
         </div>
 
         {/* Step indicator */}
