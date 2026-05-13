@@ -343,7 +343,7 @@ export default function JobListings() {
                           <Link to={`/jobs/${job.id}`} className="oj-job-title-link">
                             {job.job_title}
                           </Link>
-                          <p style={{ fontSize: 13, color: '#15803d', margin: 0, fontWeight: 500 }}>{job.employers?.organization_name}</p>
+                          <p style={{ fontSize: 13, color: '#15803d', margin: 0, fontWeight: 500 }}>{job.employers?.organization_name || 'Admin'}</p>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>

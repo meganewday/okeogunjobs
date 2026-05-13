@@ -201,7 +201,7 @@ export default function JobDetail() {
   }
 
   function shareToWhatsApp() {
-    const text = encodeURIComponent(`${job.job_title} at ${job.employers?.organization_name} — Apply on OkeOgunJobs:\n${pageUrl}`)
+    const text = encodeURIComponent(`${job.job_title} at ${job.employers?.organization_name || 'Admin'} — Apply on OkeOgunJobs:\n${pageUrl}`)
     window.open(`https://wa.me/?text=${text}`, '_blank')
   }
 
@@ -210,7 +210,7 @@ export default function JobDetail() {
   }
 
   function shareToTwitter() {
-    const text = encodeURIComponent(`${job.job_title} at ${job.employers?.organization_name} — Apply on OkeOgunJobs`)
+    const text = encodeURIComponent(`${job.job_title} at ${job.employers?.organization_name || 'Admin'} — Apply on OkeOgunJobs`)
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(pageUrl)}`, '_blank')
   }
 
@@ -219,7 +219,7 @@ export default function JobDetail() {
       try {
         await navigator.share({
           title: `${job.job_title} — OkeOgunJobs`,
-          text: `${job.job_title} at ${job.employers?.organization_name}. Apply on OkeOgunJobs.`,
+          text: `${job.job_title} at ${job.employers?.organization_name || 'Admin'}. Apply on OkeOgunJobs.`,
           url: pageUrl,
         })
       } catch {}
@@ -243,7 +243,7 @@ export default function JobDetail() {
         : 'INTERN',
       hiringOrganization: {
         '@type': 'Organization',
-        name: job.employers?.organization_name || 'OkeOgunJobs Employer',
+        name: job.employers?.organization_name || 'OkeOgunJobs Admin',
         sameAs: 'https://okeogunjobs.com',
       },
       jobLocation: {
@@ -297,16 +297,16 @@ export default function JobDetail() {
       <style>{CSS}</style>
 
       <Helmet>
-        <title>{`${job.job_title} at ${job.employers?.organization_name} | OkeOgunJobs`}</title>
+        <title>{`${job.job_title} at ${job.employers?.organization_name || 'Admin'} | OkeOgunJobs`}</title>
         <meta name="description" content={`${job.job_title} — ${job.job_type?.replace('_', ' ')} position in ${job.lga || job.location || 'Oke-Ogun'}. Apply on OkeOgunJobs.`} />
         <link rel="canonical" href={pageUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={pageUrl} />
-        <meta property="og:title" content={`${job.job_title} at ${job.employers?.organization_name} | OkeOgunJobs`} />
+        <meta property="og:title" content={`${job.job_title} at ${job.employers?.organization_name || 'Admin'} | OkeOgunJobs`} />
         <meta property="og:description" content={`${job.job_type?.replace('_', ' ')} position in ${job.lga || job.location || 'Oke-Ogun'}. ${job.job_description?.slice(0, 120)}...`} />
         <meta property="og:image" content="https://okeogunjobs.com/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${job.job_title} at ${job.employers?.organization_name}`} />
+        <meta name="twitter:title" content={`${job.job_title} at ${job.employers?.organization_name || 'Admin'}`} />
         <meta name="twitter:description" content={`Apply for this ${job.job_type?.replace('_', ' ')} job in ${job.lga || 'Oke-Ogun'} on OkeOgunJobs.`} />
         {schema && (
           <script type="application/ld+json">
@@ -336,7 +336,7 @@ export default function JobDetail() {
                   </div>
                 )}
                 <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>
-                  {job.employers?.organization_name}
+                  {job.employers?.organization_name || 'Admin'}
                 </span>
               </div>
 
@@ -533,7 +533,7 @@ export default function JobDetail() {
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { Icon: Building2, label: 'Employer', value: job.employers?.organization_name },
+                  { Icon: Building2, label: 'Employer', value: job.employers?.organization_name || 'Admin' },
                   { Icon: MapPin, label: 'Location', value: [job.location, job.lga].filter(Boolean).join(', ') || 'Oke-Ogun' },
                   { Icon: Briefcase, label: 'Job Type', value: JOB_TYPE_LABELS[job.job_type] || job.job_type },
                   { Icon: Users, label: 'Position Type', value: job.labour_type ? job.labour_type.charAt(0).toUpperCase() + job.labour_type.slice(1) : null },
@@ -561,7 +561,7 @@ export default function JobDetail() {
                 {/* Employer Logo & Name */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottom: '1.5px solid #f0fdf4' }}>
                   {job.employers?.logo_url ? (
-                    <img src={job.employers.logo_url} alt={job.employers?.organization_name}
+                    <img src={job.employers.logo_url} alt={job.employers?.organization_name || 'Admin'}
                       style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'contain', background: '#f0fdf4', padding: 4 }}
                       onError={e => { e.target.style.display = 'none' }} />
                   ) : (
@@ -571,7 +571,7 @@ export default function JobDetail() {
                   )}
                   <div>
                     <p style={{ fontSize: 12, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', margin: '0 0 2px', letterSpacing: '0.04em' }}>Company</p>
-                    <p style={{ fontSize: 14, color: '#333', fontWeight: 700, margin: 0 }}>{job.employers?.organization_name || 'N/A'}</p>
+                    <p style={{ fontSize: 14, color: '#333', fontWeight: 700, margin: 0 }}>{job.employers?.organization_name || 'Admin'}</p>
                   </div>
                 </div>
 

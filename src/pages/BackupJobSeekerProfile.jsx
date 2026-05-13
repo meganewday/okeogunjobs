@@ -711,7 +711,7 @@ export default function JobSeekerProfile() {
                     <div style={styles.appCardLeft}>
                       <h3 style={styles.appJobTitle}>{app.job_listings?.job_title || 'Job listing unavailable'}</h3>
                       <p style={styles.appJobSub}>
-                        {app.job_listings?.employers?.organization_name}
+                        {app.job_listings?.employers?.organization_name || 'Admin'}
                         {app.job_listings?.lga ? ` — ${app.job_listings.lga}` : ''}
                       </p>
                       <p style={styles.appDate}>

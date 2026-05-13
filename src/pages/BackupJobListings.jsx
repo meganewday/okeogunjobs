@@ -289,14 +289,14 @@ export default function JobListings() {
                           {logoUrl && (
                             <img
                               src={logoUrl}
-                              alt={job.employers?.organization_name}
+                              alt={job.employers?.organization_name || 'Admin'}
                               style={styles.employerLogo}
                               onError={e => { e.target.style.display = 'none' }}
                             />
                           )}
                           <div>
                             <h2 style={styles.jobTitle}>{job.job_title}</h2>
-                            <p style={styles.employerName}>{job.employers?.organization_name}</p>
+                            <p style={styles.employerName}>{job.employers?.organization_name || 'Admin'}</p>
                           </div>
                         </div>
                         <div style={styles.badgeGroup}>

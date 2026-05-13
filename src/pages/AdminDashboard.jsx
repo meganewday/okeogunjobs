@@ -12,6 +12,18 @@ export default function AdminDashboard() {
   const [jobSeekers, setJobSeekers] = useState([])
   const [employers, setEmployers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showPostJobForm, setShowPostJobForm] = useState(false)
+  const [postingJob, setPostingJob] = useState(false)
+  const [jobForm, setJobForm] = useState({
+    job_title: '',
+    job_description: '',
+    job_type: '',
+    labour_type: '',
+    location: '',
+    lga: '',
+    application_method: 'phone'
+  })
+  const [jobError, setJobError] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -58,7 +70,15 @@ export default function AdminDashboard() {
   async function fetchJobListings() {
     const { data } = await supabase
       .from('job_listings')
-      .select('*, employers(organization_name, contact_person, phone_number, email)')
+      .select(`
+        *,
+        employers(
+          organization_name,
+          contact_person,
+          phone_number,
+          email
+        )
+      `)
       .order('created_at', { ascending: false })
     if (data) setJobListings(data)
   }
@@ -160,6 +180,58 @@ export default function AdminDashboard() {
     if (!error) fetchEmployers()
   }
 
+  function handleJobFormChange(e) {
+    const { name, value } = e.target
+    setJobForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  async function handlePostJob(e) {
+    e.preventDefault()
+    setJobError('')
+
+    if (!jobForm.job_title || !jobForm.job_description || !jobForm.job_type || !jobForm.labour_type) {
+      setJobError('Please fill in all required fields.')
+      return
+    }
+
+    setPostingJob(true)
+    try {
+      // Don't include employer_id to allow NULL for admin jobs
+      const jobPayload = {
+        job_title: jobForm.job_title.trim(),
+        job_description: jobForm.job_description.trim(),
+        job_type: jobForm.job_type,
+        labour_type: jobForm.labour_type,
+        location: jobForm.location.trim() || null,
+        lga: jobForm.lga || null,
+        application_method: jobForm.application_method,
+        status: 'approved', // Admin jobs are auto-approved
+        approved_at: new Date().toISOString(),
+      }
+
+      const { error } = await supabase.from('job_listings').insert(jobPayload)
+      if (error) throw error
+
+      // Reset form and close modal
+      setJobForm({
+        job_title: '',
+        job_description: '',
+        job_type: '',
+        labour_type: '',
+        location: '',
+        lga: '',
+        application_method: 'phone'
+      })
+      setShowPostJobForm(false)
+      fetchJobListings() // Refresh the job listings
+    } catch (err) {
+      console.error('Job posting error:', err)
+      setJobError(`Failed to post job: ${err.message || 'Something went wrong'}`)
+    } finally {
+      setPostingJob(false)
+    }
+  }
+
   if (loading) {
     return (
       <div style={styles.loadingWrap}>
@@ -177,7 +249,10 @@ export default function AdminDashboard() {
       {/* Header */}
       <div style={styles.header}>
         <h1 style={styles.headerTitle}>{APP_NAME} Admin</h1>
-        <button onClick={handleLogout} style={styles.logoutBtn}>Sign Out</button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button onClick={() => setShowPostJobForm(true)} style={styles.postJobBtn}>Post Job</button>
+          <button onClick={handleLogout} style={styles.logoutBtn}>Sign Out</button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -323,7 +398,7 @@ export default function AdminDashboard() {
                 <div>
                   <h3 style={styles.cardTitle}>{job.job_title}</h3>
                   <p style={styles.cardSub}>
-                    {job.employers?.organization_name} — {job.lga || 'LGA not specified'}
+                    {job.employers?.organization_name || 'Admin'} — {job.lga || 'LGA not specified'}
                   </p>
                 </div>
                 {statusBadge(job.status)}
@@ -331,8 +406,8 @@ export default function AdminDashboard() {
               <p style={styles.cardDetail}><strong>Type:</strong> {job.job_type?.replace('_', ' ')}</p>
               <p style={styles.cardDetail}><strong>Location:</strong> {job.location || '—'}</p>
               <p style={styles.cardDetail}><strong>Application via:</strong> {job.application_method}</p>
-              <p style={styles.cardDetail}><strong>Contact:</strong> {job.employers?.contact_person}</p>
-              <p style={styles.cardDetail}><strong>Phone:</strong> {job.employers?.phone_number}</p>
+              <p style={styles.cardDetail}><strong>Contact:</strong> {job.employers?.contact_person || 'Admin'}</p>
+              <p style={styles.cardDetail}><strong>Phone:</strong> {job.employers?.phone_number || 'Contact Admin'}</p>
               {job.employers?.email && (
                 <p style={styles.cardDetail}><strong>Email:</strong> {job.employers.email}</p>
               )}
@@ -430,6 +505,121 @@ export default function AdminDashboard() {
           ))}
         </div>
       )}
+
+      {/* Post Job Modal */}
+      {showPostJobForm && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>Post Job as Admin</h2>
+              <button onClick={() => setShowPostJobForm(false)} style={styles.modalClose}>×</button>
+            </div>
+            <form onSubmit={handlePostJob} style={styles.modalForm}>
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Job Title *</label>
+                  <input
+                    type="text"
+                    name="job_title"
+                    value={jobForm.job_title}
+                    onChange={handleJobFormChange}
+                    style={styles.input}
+                    placeholder="e.g. Administrative Assistant"
+                    required
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Job Type *</label>
+                  <select name="job_type" value={jobForm.job_type} onChange={handleJobFormChange} style={styles.input} required>
+                    <option value="">Select job type</option>
+                    <option value="full_time">Full Time</option>
+                    <option value="part_time">Part Time</option>
+                    <option value="contract">Contract</option>
+                    <option value="internship">Internship</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Position Type *</label>
+                  <select name="labour_type" value={jobForm.labour_type} onChange={handleJobFormChange} style={styles.input} required>
+                    <option value="">Select position type</option>
+                    <option value="skilled">Skilled</option>
+                    <option value="unskilled">Unskilled</option>
+                    <option value="internship">Internship</option>
+                  </select>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Application Method</label>
+                  <select name="application_method" value={jobForm.application_method} onChange={handleJobFormChange} style={styles.input}>
+                    <option value="phone">Apply on Platform</option>
+                    <option value="whatsapp">Apply via WhatsApp</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={jobForm.location}
+                    onChange={handleJobFormChange}
+                    style={styles.input}
+                    placeholder="e.g. Saki, Oyo State"
+                  />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Local Government Area</label>
+                  <select name="lga" value={jobForm.lga} onChange={handleJobFormChange} style={styles.input}>
+                    <option value="">Select LGA</option>
+                    <option value="Saki West">Saki West</option>
+                    <option value="Saki East">Saki East</option>
+                    <option value="Atisbo">Atisbo</option>
+                    <option value="Oorelope">Oorelope</option>
+                    <option value="Olorunsogo">Olorunsogo</option>
+                    <option value="Iseyin">Iseyin</option>
+                    <option value="Itesiwaju">Itesiwaju</option>
+                    <option value="Kajola">Kajola</option>
+                    <option value="Iwajowa">Iwajowa</option>
+                    <option value="Irepo">Irepo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Job Description *</label>
+                <textarea
+                  name="job_description"
+                  value={jobForm.job_description}
+                  onChange={handleJobFormChange}
+                  style={{ ...styles.input, height: '100px', resize: 'vertical' }}
+                  placeholder="Describe the job responsibilities, requirements, and any other relevant information..."
+                  required
+                />
+              </div>
+
+              {jobError && (
+                <div style={styles.error}>
+                  {jobError}
+                </div>
+              )}
+
+              <div style={styles.modalActions}>
+                <button type="button" onClick={() => setShowPostJobForm(false)} style={styles.cancelBtn}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={postingJob} style={styles.submitBtn}>
+                  {postingJob ? 'Posting...' : 'Post Job'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
@@ -468,4 +658,19 @@ const styles = {
   logoPlaceholder: { width: '48px', height: '48px', borderRadius: '6px', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   seekerAvatar: { width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 },
   seekerAvatarInitial: { width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#1a6b3c', color: '#fff', fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  postJobBtn: { backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
+  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+  modal: { backgroundColor: '#fff', borderRadius: '12px', padding: 0, maxWidth: '600px', width: '90%', maxHeight: '90vh', overflow: 'auto' },
+  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #e5e7eb' },
+  modalTitle: { margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#1a6b3c' },
+  modalClose: { background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#666', padding: 0, width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  modalForm: { padding: '24px' },
+  formRow: { display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' },
+  formGroup: { flex: 1, minWidth: '200px' },
+  label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '6px' },
+  input: { width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit' },
+  error: { backgroundColor: '#fef2f2', color: '#dc2626', padding: '12px', borderRadius: '6px', fontSize: '14px', marginBottom: '16px' },
+  modalActions: { display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' },
+  cancelBtn: { padding: '10px 20px', backgroundColor: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' },
+  submitBtn: { padding: '10px 20px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
 }

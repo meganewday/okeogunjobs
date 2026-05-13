@@ -288,7 +288,7 @@ export default function Home() {
                         <div style={styles.jobCardLeft}>
                           <h3 style={styles.jobCardTitle}>{job.job_title}</h3>
                           <p style={styles.jobCardSub}>
-                            {job.employers?.organization_name} &mdash; {job.lga || job.location || 'Oke-Ogun'}
+                            {job.employers?.organization_name || 'Admin'} &mdash; {job.lga || job.location || 'Oke-Ogun'}
                           </p>
                         </div>
                         <span style={styles.jobTypePill}>

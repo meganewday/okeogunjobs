@@ -715,7 +715,7 @@ export default function JobSeekerProfile() {
                           {app.job_listings?.job_title || 'Job listing unavailable'}
                         </h3>
                         <p style={{ fontSize:13, color:'#4b6358', margin:'0 0 4px', fontWeight:500 }}>
-                          {app.job_listings?.employers?.organization_name}
+                          {app.job_listings?.employers?.organization_name || 'Admin'}
                           {app.job_listings?.lga ? ` — ${app.job_listings.lga}` : ''}
                         </p>
                         <p style={{ fontSize:12, color:'#9ca3af', margin:0 }}>

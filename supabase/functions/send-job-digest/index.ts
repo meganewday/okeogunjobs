@@ -18,7 +18,7 @@ function buildDigestEmail(jobs: any[], unsubscribeUrl: string): string {
     <div style="background:#fff;border:1px solid #e0ede6;border-radius:8px;padding:16px 18px;margin-bottom:12px;">
       <p style="font-size:15px;font-weight:700;color:#1a6b3c;margin:0 0 4px 0;">${job.job_title}</p>
       <p style="font-size:13px;color:#555;margin:0 0 8px 0;">
-        ${job.employers?.organization_name || 'Employer'} &mdash; ${job.lga || job.location || 'Oke-Ogun'}
+        ${job.employers?.organization_name || 'Admin'} &mdash; ${job.lga || job.location || 'Oke-Ogun'}
       </p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${job.job_type ? `<span style="font-size:11px;padding:3px 10px;background:#e8f5ee;color:#1a6b3c;border-radius:10px;font-weight:600;">${JOB_TYPE_LABELS[job.job_type] || job.job_type}</span>` : ''}

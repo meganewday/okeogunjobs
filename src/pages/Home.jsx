@@ -415,7 +415,7 @@ export default function Home() {
                           <div>
                             <h3 style={{ fontSize:15, fontWeight:800, color:'#14532d', margin:'0 0 4px' }}>{job.job_title}</h3>
                             <p style={{ fontSize:13, color:'#15803d', margin:0, fontWeight:500 }}>
-                              {job.employers?.organization_name} — {job.lga || job.location || 'Oke-Ogun'}
+                              {job.employers?.organization_name || 'Admin'} — {job.lga || job.location || 'Oke-Ogun'}
                             </p>
                           </div>
                           <span style={{ background:'#dcfce7', color:'#166534', borderRadius:20, padding:'4px 12px', fontSize:12, fontWeight:700, whiteSpace:'nowrap', textTransform:'capitalize', flexShrink:0 }}>
