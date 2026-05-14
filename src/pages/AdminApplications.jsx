@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useEmployerAuth } from '../contexts/EmployerAuthContext'
+import { APP_NAME } from '../config/constants'
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
@@ -58,12 +58,12 @@ const NOTIFICATION_MESSAGES = {
     `Your application for "${jobTitle}" at ${orgName} was not successful this time. Keep applying — new jobs are added regularly.`,
 }
 
-export default function EmployerApplications() {
+export default function AdminApplications() {
   const { jobId } = useParams()
-  const { employer, employerProfile, employerLoading } = useEmployerAuth()
   const navigate = useNavigate()
   const isDesktop = useIsDesktop()
-
+  const [session, setSession] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [job, setJob] = useState(null)
   const [applications, setApplications] = useState([])
   const [skills, setSkills] = useState({})
@@ -74,16 +74,29 @@ export default function EmployerApplications() {
   const [updateError, setUpdateError] = useState(null)
 
   useEffect(() => {
-    if (!employerLoading && !employer) {
-      navigate('/employer/login')
-    }
-  }, [employer, employerLoading, navigate])
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        navigate('/admin/login')
+        return
+      }
 
-  useEffect(() => {
-    if (employerProfile && jobId) {
+      const { data: adminRow } = await supabase
+        .from('admins')
+        .select('id')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!adminRow) {
+        await supabase.auth.signOut()
+        navigate('/admin/login')
+        return
+      }
+
+      setSession(session)
+      setIsAdmin(true)
       fetchJobAndApplications()
-    }
-  }, [employerProfile, jobId])
+    })
+  }, [navigate])
 
   async function fetchJobAndApplications() {
     setLoading(true)
@@ -92,11 +105,11 @@ export default function EmployerApplications() {
       .from('job_listings')
       .select('id, job_title, job_type, labour_type, location, lga, status')
       .eq('id', jobId)
-      .eq('employer_id', employerProfile.id)
+      .is('employer_id', null)
       .single()
 
     if (!jobData) {
-      navigate('/employer/dashboard')
+      navigate('/admin')
       return
     }
     setJob(jobData)
@@ -156,17 +169,15 @@ export default function EmployerApplications() {
       return
     }
 
-    // Update local state immediately
     setApplications(prev =>
       prev.map(app =>
         app.id === applicationId ? { ...app, status: newStatus } : app
       )
     )
 
-    // Write in-app notification to notifications table
     const message = NOTIFICATION_MESSAGES[newStatus]?.(
       job.job_title,
-      employerProfile.organization_name
+      APP_NAME
     )
 
     if (message && seekerId) {
@@ -187,7 +198,6 @@ export default function EmployerApplications() {
       }
     }
 
-    // Send email notification — non-blocking, does not affect UI if it fails
     if (seekerEmail) {
       try {
         await supabase.functions.invoke('notify-application-status', {
@@ -195,12 +205,11 @@ export default function EmployerApplications() {
             seekerEmail,
             seekerName: seekerName || 'Applicant',
             jobTitle: job.job_title,
-            orgName: employerProfile.organization_name,
+            orgName: APP_NAME,
             newStatus,
           },
         })
       } catch (emailErr) {
-        // Log only — email failure must never block the status update
         console.error('Email notification error:', emailErr)
       }
     }
@@ -213,11 +222,11 @@ export default function EmployerApplications() {
     const cleaned = phone.replace(/\D/g, '')
     const formatted = cleaned.startsWith('0') ? '234' + cleaned.slice(1) : cleaned
     const messages = {
-      shortlisted: `Hello ${seekerName}, your application for the "${job?.job_title}" position at ${employerProfile?.organization_name} has been shortlisted. We will be in touch with next steps.`,
-      accepted: `Hello ${seekerName}, congratulations! Your application for the "${job?.job_title}" position at ${employerProfile?.organization_name} has been accepted. Please contact us to discuss next steps.`,
-      rejected: `Hello ${seekerName}, thank you for applying for the "${job?.job_title}" position at ${employerProfile?.organization_name}. Unfortunately, we will not be moving forward with your application at this time.`,
+      shortlisted: `Hello ${seekerName}, your application for the "${job?.job_title}" position at ${APP_NAME} has been shortlisted. We will be in touch with next steps.`,
+      accepted: `Hello ${seekerName}, congratulations! Your application for the "${job?.job_title}" position at ${APP_NAME} has been accepted. Please contact us to discuss next steps.`,
+      rejected: `Hello ${seekerName}, thank you for applying for the "${job?.job_title}" position at ${APP_NAME}. Unfortunately, we will not be moving forward with your application at this time.`,
     }
-    const text = messages[newStatus] || `Hello ${seekerName}, regarding your application for "${job?.job_title}" at ${employerProfile?.organization_name}.`
+    const text = messages[newStatus] || `Hello ${seekerName}, regarding your application for "${job?.job_title}" at ${APP_NAME}.`
     return `https://wa.me/${formatted}?text=${encodeURIComponent(text)}`
   }
 
@@ -240,7 +249,7 @@ export default function EmployerApplications() {
     rejected: applications.filter(a => a.status === 'rejected').length,
   }
 
-  if (employerLoading || loading) {
+  if (!isAdmin || loading) {
     return (
       <div style={styles.centred}>
         <p style={styles.loadingText}>Loading applications...</p>
@@ -253,8 +262,7 @@ export default function EmployerApplications() {
   return (
     <div style={styles.page}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-
-        <Link to="/employer/dashboard" style={styles.backLink}>← Back to Dashboard</Link>
+        <Link to="/admin" style={styles.backLink}>← Back to Admin Dashboard</Link>
 
         <div style={styles.pageHeader}>
           <div>
@@ -280,7 +288,6 @@ export default function EmployerApplications() {
           <div style={styles.errorBanner}>{updateError}</div>
         )}
 
-        {/* FILTER TABS */}
         <div style={styles.filterRow}>
           {['all', 'submitted', 'shortlisted', 'accepted', 'rejected'].map(status => (
             counts[status] > 0 || status === 'all' ? (
@@ -300,7 +307,6 @@ export default function EmployerApplications() {
           ))}
         </div>
 
-        {/* APPLICATIONS LIST */}
         {filtered.length === 0 ? (
           <div style={styles.emptyCard}>
             <p style={styles.emptyText}>
@@ -323,8 +329,6 @@ export default function EmployerApplications() {
 
               return (
                 <div key={app.id} style={styles.appCard}>
-
-                  {/* CARD TOP */}
                   <div style={styles.appCardTop}>
                     <div style={styles.appCardLeft}>
                       <div style={styles.avatarRow}>
@@ -357,12 +361,10 @@ export default function EmployerApplications() {
                     </div>
                   </div>
 
-                  {/* COVER NOTE */}
                   {app.cover_note && (
                     <p style={styles.coverNote}>"{app.cover_note}"</p>
                   )}
 
-                  {/* QUICK INFO */}
                   <div style={styles.quickInfo}>
                     {seeker?.education_level && (
                       <span style={styles.quickTag}>
@@ -387,7 +389,6 @@ export default function EmployerApplications() {
                     )}
                   </div>
 
-                  {/* EXPANDED DETAILS */}
                   {isExpanded && (
                     <div style={styles.expandedDetails}>
                       <div style={{
@@ -425,10 +426,7 @@ export default function EmployerApplications() {
                     </div>
                   )}
 
-                  {/* ACTION SECTION */}
                   <div style={styles.actionSection}>
-
-                    {/* SUBMITTED — show Shortlist + Accept + Reject */}
                     {app.status === 'submitted' && (
                       <div style={styles.actionRow}>
                         <p style={styles.actionLabel}>Move this application:</p>
@@ -447,7 +445,6 @@ export default function EmployerApplications() {
                       </div>
                     )}
 
-                    {/* SHORTLISTED — show badge + Final Decision section */}
                     {app.status === 'shortlisted' && (
                       <div style={styles.finalDecisionBox}>
                         <p style={styles.finalDecisionTitle}>Final Decision</p>
@@ -470,7 +467,6 @@ export default function EmployerApplications() {
                             {updating === app.id ? '...' : 'Reject'}
                           </button>
                         </div>
-                        {/* WhatsApp shortlist notification link */}
                         {(seeker?.whatsapp_number || seeker?.phone_number) && (
                           <a
                             href={getWhatsAppLink(seeker.whatsapp_number || seeker.phone_number, seeker.full_name, 'shortlisted')}
@@ -484,17 +480,11 @@ export default function EmployerApplications() {
                       </div>
                     )}
 
-                    {/* ACCEPTED — WhatsApp link + Add to Team */}
                     {app.status === 'accepted' && (
                       <div style={styles.decisionMadeRow}>
                         <span style={{ ...styles.decisionBadge, backgroundColor: '#e8f5ee', color: '#1a6b3c' }}>
                           ✓ Accepted
                         </span>
-                        <AddToTeamButton
-                          seeker={seeker}
-                          jobTitle={job.job_title}
-                          employerProfileId={employerProfile.id}
-                        />
                         {(seeker?.whatsapp_number || seeker?.phone_number) && (
                           <a
                             href={getWhatsAppLink(seeker.whatsapp_number || seeker.phone_number, seeker.full_name, 'accepted')}
@@ -508,7 +498,6 @@ export default function EmployerApplications() {
                       </div>
                     )}
 
-                    {/* REJECTED */}
                     {app.status === 'rejected' && (
                       <div style={styles.decisionMadeRow}>
                         <span style={{ ...styles.decisionBadge, backgroundColor: '#fee2e2', color: '#b91c1c' }}>
@@ -517,18 +506,15 @@ export default function EmployerApplications() {
                       </div>
                     )}
 
-                    {/* WITHDRAWN */}
                     {app.status === 'withdrawn' && (
                       <div style={styles.decisionMadeRow}>
-                        <span style={{ ...styles.decisionBadge, backgroundColor: '#f3f4f6', color: '#6b7280' }}>
+                        <span style={{ ...styles.decisionBadge, backgroundColor: '#f3f3f3', color: '#6b7280' }}>
                           Withdrawn by applicant
                         </span>
                       </div>
                     )}
-
                   </div>
 
-                  {/* CARD FOOTER */}
                   <div style={styles.cardFooter}>
                     <div style={styles.footerRight}>
                       {seeker?.cv_url && (
@@ -549,75 +535,13 @@ export default function EmployerApplications() {
                       </button>
                     </div>
                   </div>
-
                 </div>
               )
             })}
           </div>
         )}
-
       </div>
     </div>
-  )
-}
-
-function AddToTeamButton({ seeker, jobTitle, employerProfileId }) {
-  const [added, setAdded] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [checked, setChecked] = useState(false)
-  const [alreadyExists, setAlreadyExists] = useState(false)
-
-  useEffect(() => {
-    async function check() {
-      if (!seeker?.id) return
-      const { data } = await supabase
-        .from('employees')
-        .select('id')
-        .eq('employer_id', employerProfileId)
-        .eq('job_seeker_id', seeker.id)
-        .single()
-      if (data) setAlreadyExists(true)
-      setChecked(true)
-    }
-    check()
-  }, [seeker?.id, employerProfileId])
-
-  async function handleAdd() {
-    if (!seeker) return
-    setAdding(true)
-    const { error } = await supabase.from('employees').insert({
-      employer_id: employerProfileId,
-      job_seeker_id: seeker.id,
-      full_name: seeker.full_name,
-      role: jobTitle || null,
-      phone_number: seeker.phone_number || null,
-      employment_type: 'full_time',
-      status: 'active',
-      source: 'platform',
-      start_date: new Date().toISOString().split('T')[0],
-    })
-    if (!error) {
-      setAdded(true)
-      setAlreadyExists(true)
-    }
-    setAdding(false)
-  }
-
-  if (!checked) return null
-  if (alreadyExists && !added) return (
-    <span style={{ fontSize: '12px', color: '#1a6b3c', fontWeight: '600' }}>✓ In your team</span>
-  )
-  if (added) return (
-    <span style={{ fontSize: '12px', color: '#1a6b3c', fontWeight: '600' }}>✓ Added to team</span>
-  )
-  return (
-    <button
-      onClick={handleAdd}
-      disabled={adding}
-      style={{ padding: '5px 14px', backgroundColor: '#f0fdf4', color: '#1a6b3c', border: '1px solid #bbf7d0', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
-    >
-      {adding ? '...' : '+ Add to My Team'}
-    </button>
   )
 }
 
@@ -666,33 +590,22 @@ const styles = {
   skillTag: { fontSize: '11px', padding: '3px 10px', backgroundColor: '#e8f5ee', color: '#1a6b3c', borderRadius: '10px', fontWeight: '600' },
   expandedDetails: { backgroundColor: '#f9f9f9', borderRadius: '8px', padding: '16px', marginBottom: '12px' },
   allSkills: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' },
-
-  // Action section
   actionSection: { borderTop: '1px solid #f0f0f0', paddingTop: '14px', marginBottom: '4px' },
   actionRow: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' },
   actionLabel: { fontSize: '12px', color: '#888', fontWeight: '600', margin: 0 },
   actionButtons: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
   actionBtn: { padding: '6px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', border: 'none' },
-
-  // Final decision box (shortlisted state)
   finalDecisionBox: { backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '14px 16px' },
   finalDecisionTitle: { fontSize: '13px', fontWeight: '700', color: '#0369a1', margin: '0 0 4px 0' },
   finalDecisionHint: { fontSize: '12px', color: '#555', margin: '0 0 12px 0' },
-
-  // Decision made (accepted/rejected)
   decisionMadeRow: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' },
   decisionBadge: { fontSize: '13px', padding: '5px 14px', borderRadius: '8px', fontWeight: '700' },
-
-  // WhatsApp notify link
   waNotifyLink: { display: 'inline-block', marginTop: '10px', fontSize: '13px', color: '#25d366', fontWeight: '600', textDecoration: 'none' },
-
-  // Card footer
   cardFooter: { display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid #f0f0f0', marginTop: '12px' },
   footerRight: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' },
   cvLink: { fontSize: '13px', color: '#1a6b3c', fontWeight: '600', textDecoration: 'none' },
   whatsappLink: { fontSize: '13px', color: '#25d366', fontWeight: '600', textDecoration: 'none' },
   expandBtn: { fontSize: '13px', color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600', padding: '4px 0' },
-
   emptyCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '40px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
   emptyText: { fontSize: '14px', color: '#888' },
 }

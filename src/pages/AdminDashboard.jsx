@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { APP_NAME } from '../config/constants'
 import { useInactivityTimeout, clearActivity } from '../lib/inactivity'
 
@@ -426,6 +426,11 @@ export default function AdminDashboard() {
                   <button onClick={() => updateJobStatus(job.id, 'rejected')} style={styles.rejectBtn}>Reject</button>
                 </div>
               )}
+              {job.employer_id === null && (
+                <div style={styles.actionRow}>
+                  <Link to={`/admin/applications/${job.id}`} style={styles.manageAppsBtn}>Manage Applications</Link>
+                </div>
+              )}
               {job.status === 'rejected' && (
                 <div style={styles.actionRow}>
                   <button onClick={() => updateJobStatus(job.id, 'approved')} style={styles.approveBtn}>Re-approve</button>
@@ -673,4 +678,5 @@ const styles = {
   modalActions: { display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' },
   cancelBtn: { padding: '10px 20px', backgroundColor: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' },
   submitBtn: { padding: '10px 20px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
+  manageAppsBtn: { display: 'inline-block', padding: '8px 16px', backgroundColor: '#2563eb', color: '#fff', borderRadius: '6px', textDecoration: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
 }

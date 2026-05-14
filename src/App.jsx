@@ -7,6 +7,7 @@ import JobListings from './pages/JobListings'
 import JobDetail from './pages/JobDetail'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminApplications from './pages/AdminApplications'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Countdown from './components/Countdown'
@@ -102,6 +103,7 @@ function App() {
               {/* Admin */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/applications/:jobId" element={<AdminApplications />} />
             </Routes>
           </Layout>
         </BrowserRouter>
